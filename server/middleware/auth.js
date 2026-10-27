@@ -9,7 +9,7 @@ export function setSessionCookie(res, token) {
   res.cookie(env.cookieName, token, {
     httpOnly: true,
     secure: env.nodeEnv === 'production',
-    sameSite: 'lax',
+    sameSite: env.nodeEnv === 'production' ? 'none' : 'lax',
     path: '/',
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
@@ -19,7 +19,7 @@ export function clearSessionCookie(res) {
   res.clearCookie(env.cookieName, {
     httpOnly: true,
     secure: env.nodeEnv === 'production',
-    sameSite: 'lax',
+    sameSite: env.nodeEnv === 'production' ? 'none' : 'lax',
     path: '/',
   });
 }

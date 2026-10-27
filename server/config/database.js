@@ -1,9 +1,24 @@
 import mongoose from 'mongoose';
 
+let connectionPromise;
+
 export async function connectDatabase(uri) {
   if (!uri) throw new Error('MONGODB_URI is not configured.');
-  await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
-  return mongoose.connection;
+  if (mongoose.connection.readyState === 1) return mongoose.connection;
+
+  if (!connectionPromise) {
+    connectionPromise = mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 })
+      .then(() => {
+        connectionPromise = undefined;
+        return mongoose.connection;
+      })
+      .catch((error) => {
+        connectionPromise = undefined;
+        throw error;
+      });
+  }
+
+  return connectionPromise;
 }
 
 export function getDatabaseStatus() {

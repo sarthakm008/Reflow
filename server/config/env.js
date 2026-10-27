@@ -17,5 +17,17 @@ export function validateEnvironment({ requireDatabase = true } = {}) {
   if (!env.jwtSecret || env.jwtSecret.length < 32) {
     errors.push('JWT_SECRET must be set and contain at least 32 characters.');
   }
+  const origins = env.clientOrigin.split(',').map((origin) => origin.trim()).filter(Boolean);
+  if (!origins.length || origins.some((origin) => {
+    try {
+      const url = new URL(origin);
+      return !['http:', 'https:'].includes(url.protocol)
+        || (env.nodeEnv === 'production' && url.protocol !== 'https:');
+    } catch {
+      return true;
+    }
+  })) {
+    errors.push('CLIENT_ORIGIN must contain valid origins (HTTPS in production).');
+  }
   return errors;
 }

@@ -34,6 +34,28 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
+// Vercel imports this module without running the direct-start block below.
+// Connect on demand in production, before any route can touch a model.
+app.use('/api', async (req, res, next) => {
+  if (env.nodeEnv !== 'production' || req.path === '/health') return next();
+
+  const errors = validateEnvironment();
+  if (errors.length) {
+    return res.status(500).json({
+      error: { code: 'SERVER_CONFIGURATION_ERROR', message: 'The service is not configured correctly.' },
+    });
+  }
+
+  try {
+    await connectDatabase(env.mongoUri);
+    return next();
+  } catch {
+    return res.status(500).json({
+      error: { code: 'DATABASE_UNAVAILABLE', message: 'The service is temporarily unavailable.' },
+    });
+  }
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/sessions', sessionRoutes);
