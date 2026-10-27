@@ -64,7 +64,7 @@ Traditional to-do apps simply mark tasks as red and overdue, creating guilt rath
 - **Language:** **JavaScript (ES Modules) & JSX only** (Strictly zero TypeScript)
 - **Styling:** Tailwind CSS
 - **Icons:** Lucide React
-- **Persistence:** Browser `localStorage` with versioned schema keys, automated error recovery, and zero backend requirement
+- **Persistence:** Guest mode uses browser `localStorage`; authenticated accounts use the Express API and MongoDB, with local caching for continuity
 - **Testing:** Native Node.js test runner (`node:test` & `node:assert`)
 
 ---
@@ -76,7 +76,7 @@ Traditional to-do apps simply mark tasks as red and overdue, creating guilt rath
 ├── package.json                # Dependencies and npm scripts
 ├── vite.config.js              # Vite configuration (pure JavaScript)
 ├── tests/
-│   └── commitzero.test.js      # Automated unit test suite (18 unit tests)
+│   └── commitzero.test.js      # Automated regression test suite (36 tests)
 └── src/
     ├── main.jsx                # React DOM mounting entry point
     ├── App.jsx                 # Top-level shell and view router
@@ -96,7 +96,7 @@ Traditional to-do apps simply mark tasks as red and overdue, creating guilt rath
     └── components/
         ├── common/
         │   ├── Navbar.jsx      # Header with active session ticker & demo menu
-        │   └── Sidebar.jsx     # Navigation and study budget capacity widget
+        │   └── Sidebar.jsx     # Navigation, staleness indicator & budget widget
         ├── dashboard/
         │   └── DashboardView.jsx # Primary command center & overload warnings
         ├── tasks/
@@ -116,15 +116,68 @@ Traditional to-do apps simply mark tasks as red and overdue, creating guilt rath
 
 ## 5. Local Setup & Development
 
+Reflow now supports a separate Express API and MongoDB persistence for authenticated accounts. Guest mode remains local-first and continues to use browser `localStorage`.
+
+### Prerequisites
+- Node.js 20 or newer
+- npm
+- MongoDB Community Server running locally, or a MongoDB Atlas database URI
+
+### Frontend setup
+From the repository root:
+
+```powershell
+npm install
+npm run dev
+```
+
+The frontend runs at `http://localhost:3000`. During development, Vite proxies `/api` requests to `http://localhost:4000` by default.
+
+### Backend setup
+Open a second PowerShell terminal:
+
+```powershell
+cd server
+Copy-Item .env.example .env
+npm install
+```
+
+Edit `server/.env` and configure `MONGODB_URI` and `JWT_SECRET`. The JWT secret must be at least 32 characters. Start MongoDB before starting the API.
+
+```powershell
+npm run dev
+```
+
+The API runs at `http://localhost:4000`. Verify it at `http://localhost:4000/api/health`. A healthy response reports `status: "ok"` and a connected database; if MongoDB is unavailable, the endpoint returns HTTP 503 and reports `status: "degraded"`.
+
+### Authentication and account data
+- Registration and login use an HttpOnly, SameSite=Lax cookie.
+- Passwords are hashed with bcrypt; password hashes are never returned by API endpoints.
+- Tasks, focus sessions, preferences, and daily plans are scoped to the authenticated account.
+- On first registration, existing local tasks and session history are automatically imported if the new account has no cloud data. Signing into an existing account does not automatically import data from another account on that browser.
+- Guest mode remains available; guest data stays in that browser's local storage.
+
+### Backend commands from the repository root
+```powershell
+npm run server:install
+npm run server:dev
+npm run server:test
+npm run server:lint
+```
+
+To run the backend directly, use `cd server` followed by `npm install` and `npm run dev`.
+
+
+
 ### Prerequisites
 - Node.js 18+ (Node 20+ recommended)
-- npm or bun
+- npm
 
 ### Installation
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd commitzero
+cd reflow
 
 # Install dependencies
 npm install
@@ -137,7 +190,20 @@ npm run dev
 ```bash
 npm test
 ```
-Runs 18 unit tests across task validation, scheduling constraints, focus session timestamp tracking, recovery conflict detection, and analytics calculation.
+Runs 36 current regression tests across:
+1. **Task Model & Validation:** Title requirements, positive durations, 24h ceiling, remaining duration calculations.
+2. **Scheduling Engine:** Feasibility, overload detection, priority scoring, non-overlapping blocks, completed tasks excluded, tasks without deadlines, unavailable periods, strict separation of `partiallyScheduledTasks` and `unscheduledTasks`, study window validation (start < end), zero capacity handling, and work interval chunking with rest breaks.
+3. **Focus Session Tracking:** Accurate timestamps (`Date.now()`), paused time exclusion, documented rounding policy (≥30s rounds to 1m, <30s discarded), clean cancellation policy, and resilience against deleted tasks.
+4. **Split-Task Semantics & Recovery Consistency (Section 2):** Partial allocation acceptance, full allocation acceptance, regeneration idempotency, partial work completion, focus session completion, planned vs actual work distinction in analytics, completed tasks excluded from recovery.
+5. **Recovery Rejection (Section 3):** Declining a proposal leaves original schedule, tasks, and history 100% unaltered, clears the proposal, and redirects to planner.
+6. **Schedule Invalidation (Section 4):** Task creation, editing duration/priority/deadline, deleting tasks, completing tasks, and reopening tasks flag schedule staleness with clear 1-click recalculation cues.
+7. **Local Storage Resilience (Section 7):** Safe JSON parsing fallback, legacy unversioned key migration, and quota error handling.
+
+### Linting
+```bash
+npm run lint
+```
+Performs syntax validation on all JavaScript engine modules and test files via `node --check`.
 
 ### Production Build
 ```bash
@@ -203,3 +269,57 @@ Deploy the `dist/` folder as a standard Single Page Application (SPA). For stati
 
 - **Single Device / Local Browser Scope:** All state is saved to the browser's `localStorage`. Syncing across multiple devices would require a remote database and authentication backend.
 - **Single-Day Time Windows:** Schedule generation currently allocates time within a single calendar day window; multi-day project roadmapping is handled via deadline dates and daily rollover.
+
+---
+
+## Run Reflow locally (Windows)
+
+### 1. Install frontend dependencies
+
+From the project root:
+
+```powershell
+npm ci
+```
+
+### 2. Configure the backend
+
+```powershell
+cd server
+Copy-Item .env.example .env
+npm install
+```
+
+Edit `server/.env`. Set `MONGODB_URI` to your local MongoDB or MongoDB Atlas connection string, and set `JWT_SECRET` to a random secret of at least 32 characters. Keep `.env` private and out of Git.
+
+Start MongoDB before starting the API. In the `server` folder, run:
+
+```powershell
+npm run dev
+```
+
+The API listens on port 4000. Check `http://localhost:4000/api/health` to verify database status.
+
+### 3. Start the frontend
+
+Open a second terminal in the project root and run:
+
+```powershell
+npm run dev
+```
+
+Open `http://localhost:3000`.
+
+### 4. Test
+
+From the project root:
+
+```powershell
+npm test
+npm run lint
+npm run build
+npm run server:test
+npm run server:lint
+```
+
+Backend API routes are in `server/routes/`, request handlers in `server/controllers/`, Mongoose schemas in `server/models/`, and the backend entry point is `server/index.js`.

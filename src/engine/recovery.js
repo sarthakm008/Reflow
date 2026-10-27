@@ -1,7 +1,7 @@
 // CommitZero - Plan Recovery Engine
 // Pure JavaScript, the core differentiator: algorithmic schedule repair & decision support
 
-import { TaskPriority, TaskStatus, getPriorityWeight } from '../models/taskModel.js';
+import { TaskPriority, TaskStatus, getPriorityWeight, getTaskRemainingMinutes } from '../models/taskModel.js';
 import { generateDailySchedule, timeStringToMinutes, minutesToTimeString } from './scheduler.js';
 
 export const RecoveryTriggerReason = {
@@ -39,7 +39,9 @@ export function analyzePlanRecovery({
 
   // STEP 1: Inspect Current Plan
   const completedTaskIds = new Set(
-    tasks.filter((t) => t.status === TaskStatus.COMPLETED || (t.remainingDurationMinutes || 0) <= 0).map((t) => t.id)
+    tasks
+      .filter((t) => t.status === TaskStatus.COMPLETED || getTaskRemainingMinutes(t) <= 0)
+      .map((t) => t.id)
   );
 
   const existingBlocks = currentPlan?.blocks || [];
@@ -54,13 +56,13 @@ export function analyzePlanRecovery({
   );
 
   // STEP 2: Calculate Actual Remaining Workload
-  // Sum remaining durations for active, incomplete tasks
+  // Sum true remaining durations for active, incomplete tasks (never recount completed work)
   const eligibleTasks = tasks.filter((t) => {
-    return t.status !== TaskStatus.COMPLETED && (t.remainingDurationMinutes || 0) > 0;
+    return t.status !== TaskStatus.COMPLETED && getTaskRemainingMinutes(t) > 0;
   });
 
   const totalRemainingWorkMinutes = eligibleTasks.reduce(
-    (acc, t) => acc + (t.remainingDurationMinutes || t.estimatedDurationMinutes || 0),
+    (acc, t) => acc + getTaskRemainingMinutes(t),
     0
   );
 
@@ -74,21 +76,17 @@ export function analyzePlanRecovery({
 
   // Determine remaining available study budget
   const configuredMaxMinutes = Number(preferences.maxDailyMinutes) || 180;
-  // If user provided an override in recovery context (e.g. "I only have 90m left today")
   let effectiveAvailableMinutes = configuredMaxMinutes;
   if (recoveryContext.overrideAvailableMinutes !== undefined && recoveryContext.overrideAvailableMinutes !== null) {
-    effectiveAvailableMinutes = Number(recoveryContext.overrideAvailableMinutes);
+    effectiveAvailableMinutes = Math.max(0, Number(recoveryContext.overrideAvailableMinutes));
   } else if (todayRecordedActiveMinutes > 0) {
-    // Deduct already-worked time from the daily budget
     effectiveAvailableMinutes = Math.max(0, configuredMaxMinutes - todayRecordedActiveMinutes);
   }
 
   // STEP 3: Generate Revised Candidate Schedule
-  // Adjusted preferences for remaining part of the day
   const recoveryPreferences = {
     ...preferences,
     maxDailyMinutes: effectiveAvailableMinutes,
-    // If started mid-day, advance start time to now or preserve start
     startTime: recoveryContext.useCurrentTimeAsStart
       ? minutesToTimeString(now.getHours() * 60 + now.getMinutes())
       : preferences.startTime,
@@ -97,7 +95,6 @@ export function analyzePlanRecovery({
   const revisedPlanResult = generateDailySchedule(eligibleTasks, recoveryPreferences, currentPlanDate);
 
   // STEP 4: Conflict & Shift Detection
-  // Compare original remaining blocks with revised blocks
   const originalTaskIdsInPlan = new Set(remainingOriginalBlocks.map((b) => b.taskId));
   const revisedTaskIdsInPlan = new Set(
     revisedPlanResult.blocks.filter((b) => !b.isBreak).map((b) => b.taskId)
@@ -113,7 +110,7 @@ export function analyzePlanRecovery({
     const stillPresent = revisedPlanResult.blocks.some((b) => b.taskId === origBlock.taskId);
     if (!stillPresent) {
       const taskObj = tasks.find((t) => t.id === origBlock.taskId);
-      if (taskObj) {
+      if (taskObj && !tasksMovedOut.some((t) => t.id === taskObj.id)) {
         tasksMovedOut.push(taskObj);
       }
     }
@@ -130,23 +127,31 @@ export function analyzePlanRecovery({
     }
     if (revBlock.isSplit) {
       const taskObj = tasks.find((t) => t.id === revBlock.taskId);
-      if (taskObj && !tasksSplit.some((t) => t.id === taskObj.id)) {
+      if (taskObj && !tasksSplit.some((item) => item.task.id === taskObj.id)) {
+        const totalAllocatedForTask = revisedPlanResult.blocks
+          .filter((b) => b.taskId === taskObj.id)
+          .reduce((sum, b) => sum + (b.durationMinutes || 0), 0);
+
         tasksSplit.push({
           task: taskObj,
-          allocatedMinutes: revBlock.durationMinutes,
-          remainingAfterBlock: revBlock.remainingAfterBlock,
+          allocatedMinutes: totalAllocatedForTask,
+          remainingAfterBlock: Math.max(0, getTaskRemainingMinutes(taskObj) - totalAllocatedForTask),
         });
       }
     }
   });
 
   // Check changed timings for retained tasks
+  const rescheduledTaskIds = new Set();
   revisedPlanResult.blocks.forEach((revBlock) => {
     if (revBlock.isBreak) return;
+    if (rescheduledTaskIds.has(revBlock.taskId)) return;
+
     const orig = remainingOriginalBlocks.find((b) => b.taskId === revBlock.taskId);
     if (orig && (orig.startTime !== revBlock.startTime || orig.durationMinutes !== revBlock.durationMinutes)) {
       const taskObj = tasks.find((t) => t.id === revBlock.taskId);
       if (taskObj) {
+        rescheduledTaskIds.add(taskObj.id);
         tasksRescheduled.push({
           task: taskObj,
           oldStartTime: orig.startTime,
@@ -161,14 +166,23 @@ export function analyzePlanRecovery({
   // STEP 5: Transparent Explanations (Generated from factual scheduling decisions)
   const explanations = [];
 
-  // Check trigger specific explanation
+  // Validation error explanation
+  if (revisedPlanResult.validationError) {
+    explanations.push({
+      type: 'validation_error',
+      icon: 'alert-triangle',
+      text: revisedPlanResult.validationError,
+    });
+  }
+
+  // Trigger-specific explanation
   if (trigger === RecoveryTriggerReason.TASK_RAN_OVER && recoveryContext.affectedTaskId) {
     const affTask = tasks.find((t) => t.id === recoveryContext.affectedTaskId);
     if (affTask) {
       explanations.push({
         type: 'trigger',
         icon: 'clock-alert',
-        text: `Task "${affTask.title}" required more time than planned. Remaining work updated to ${affTask.remainingDurationMinutes}m.`,
+        text: `Task "${affTask.title}" required more time than planned. Remaining work updated to ${getTaskRemainingMinutes(affTask)}m.`,
       });
     }
   }
@@ -181,7 +195,7 @@ export function analyzePlanRecovery({
       icon: 'alert-triangle',
       text: `Remaining workload (${totalRemainingWorkMinutes}m) exceeds available study capacity (${effectiveAvailableMinutes}m) by ${deficit}m. Lower priority and later-due tasks have been deferred.`,
     });
-  } else {
+  } else if (!revisedPlanResult.validationError) {
     explanations.push({
       type: 'capacity_fit',
       icon: 'check-circle',
@@ -235,6 +249,9 @@ export function analyzePlanRecovery({
     tasksSplitCount: tasksSplit.length,
   };
 
+  const hasValidationError = Boolean(revisedPlanResult.validationError);
+  const canApply = !hasValidationError && (revisedPlanResult.blocks.length > 0 || eligibleTasks.length === 0);
+
   return {
     id: `recov_${Date.now()}`,
     createdAt: now.toISOString(),
@@ -252,6 +269,7 @@ export function analyzePlanRecovery({
     tasksSplit,
     explanations,
     deadlineRisks: revisedPlanResult.deadlineRisks,
-    canApply: revisedPlanResult.blocks.length > 0 || eligibleTasks.length === 0,
+    validationError: revisedPlanResult.validationError || null,
+    canApply,
   };
 }

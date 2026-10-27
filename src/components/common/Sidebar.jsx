@@ -22,6 +22,7 @@ export default function Sidebar({ isMobileMenuOpen, onCloseMobileMenu }) {
     setCurrentView,
     tasks,
     currentPlan,
+    planStaleInfo,
     preferences,
     activeTimer,
     recoveryProposal,
@@ -35,7 +36,7 @@ export default function Sidebar({ isMobileMenuOpen, onCloseMobileMenu }) {
 
   const totalRemainingMins = tasks
     .filter((t) => t.status !== 'Completed')
-    .reduce((acc, t) => acc + (t.remainingDurationMinutes || t.estimatedDurationMinutes || 0), 0);
+    .reduce((acc, t) => acc + (t.remainingDurationMinutes !== undefined ? t.remainingDurationMinutes : t.estimatedDurationMinutes || 0), 0);
 
   const availableStudyMins = Number(preferences.maxDailyMinutes) || 180;
   const isOverloaded = totalRemainingMins > availableStudyMins;
@@ -58,7 +59,7 @@ export default function Sidebar({ isMobileMenuOpen, onCloseMobileMenu }) {
       id: 'planner',
       label: 'Daily Planner',
       icon: Calendar,
-      badge: isOverloaded ? 'Overloaded' : null,
+      badge: planStaleInfo?.isStale ? 'Update Needed' : isOverloaded ? 'Overloaded' : null,
       badgeColor: 'bg-amber-900/60 text-amber-300 border border-amber-700/50',
     },
     {

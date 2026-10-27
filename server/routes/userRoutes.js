@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import { getPlan, getPreferences, savePlan, updatePreferences } from '../controllers/userController.js';
+import { requireAuth } from '../middleware/auth.js';
+const router = Router();
+router.use(requireAuth);
+router.get('/preferences', getPreferences);
+router.put('/preferences', updatePreferences);
+router.get('/plans/:date', getPlan);
+router.put('/plans', savePlan);
+export default router;

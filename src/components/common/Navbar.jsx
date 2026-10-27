@@ -14,6 +14,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   Flame,
+  LogIn,
+  LogOut,
 } from 'lucide-react';
 import { formatTimeDisplay } from '../../models/sessionModel.js';
 
@@ -26,6 +28,8 @@ export default function Navbar({ onToggleMobileMenu, isMobileMenuOpen }) {
     runSection16Simulation,
     resetAllData,
     notice,
+    user,
+    signOut,
   } = useApp();
 
   const [showConfirmReset, setShowConfirmReset] = useState(false);
@@ -57,12 +61,12 @@ export default function Navbar({ onToggleMobileMenu, isMobileMenuOpen }) {
               className="flex items-center gap-2.5 cursor-pointer select-none group"
             >
               <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center font-mono font-bold text-slate-950 text-base shadow-sm group-hover:bg-emerald-400 transition-colors">
-                0
+                R
               </div>
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-bold tracking-tight text-base sm:text-lg text-white font-mono">
-                    Commit<span className="text-emerald-400">Zero</span>
+                    <span className="text-emerald-400">Reflow</span>
                   </span>
                   <span className="hidden sm:inline-block text-[11px] font-medium tracking-wide text-emerald-400/90 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800/60">
                     ACADEMIC
@@ -102,6 +106,16 @@ export default function Navbar({ onToggleMobileMenu, isMobileMenuOpen }) {
             <span className="hidden lg:inline text-xs font-medium text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-700/60">
               {todayDateFormatted}
             </span>
+
+            <button
+              type="button"
+              onClick={() => user ? signOut() : setCurrentView('auth')}
+              className="flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:bg-slate-700"
+              title={user ? `Sign out ${user.email}` : 'Sign in to sync your data'}
+            >
+              {user ? <LogOut className="h-3.5 w-3.5 text-emerald-400" /> : <LogIn className="h-3.5 w-3.5 text-emerald-400" />}
+              <span className="hidden sm:inline">{user ? 'Sign out' : 'Sign in'}</span>
+            </button>
 
             {/* Quick Demo Scenario Trigger */}
             <div className="relative">

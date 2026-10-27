@@ -1,4 +1,4 @@
-// CommitZero - Dashboard View
+// Reflow - Dashboard View
 // Pure JavaScript, actionable student productivity hub with real workload telemetry
 
 import React from 'react';
@@ -16,14 +16,17 @@ import {
   Plus,
   BookOpen,
   CheckSquare,
+  RefreshCw,
 } from 'lucide-react';
 import { formatMinutesHuman } from '../../models/sessionModel.js';
-import { isTaskOverdue, isTaskDueSoon, TaskStatus } from '../../models/taskModel.js';
+import { isTaskOverdue, isTaskDueSoon, TaskStatus, getTaskRemainingMinutes } from '../../models/taskModel.js';
 
 export default function DashboardView({ onOpenNewTaskModal }) {
   const {
     tasks,
     currentPlan,
+    planStaleInfo,
+    storageWarning,
     preferences,
     activeTimer,
     setCurrentView,
@@ -55,7 +58,7 @@ export default function DashboardView({ onOpenNewTaskModal }) {
   const dueSoonTasks = tasks.filter((t) => isTaskDueSoon(t, 48, now));
 
   const totalRemainingMinutes = pendingTasks.reduce(
-    (acc, t) => acc + (t.remainingDurationMinutes || t.estimatedDurationMinutes || 0),
+    (acc, t) => acc + getTaskRemainingMinutes(t),
     0
   );
 
@@ -118,6 +121,36 @@ export default function DashboardView({ onOpenNewTaskModal }) {
         </div>
       </div>
 
+      {/* STORAGE WARNING BANNER */}
+      {storageWarning && (
+        <div className="bg-red-50 border border-red-300 rounded-xl p-4 flex items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-2.5 text-xs text-red-900 font-medium">
+            <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+            <span>{storageWarning}</span>
+          </div>
+        </div>
+      )}
+
+      {/* SCHEDULE STALENESS / INVALIDATION ALERT BANNER */}
+      {planStaleInfo?.isStale && (
+        <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-start gap-2.5">
+            <RefreshCw className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-bold text-amber-900">Schedule Invalidation Notice</p>
+              <p className="text-xs text-amber-800 mt-0.5">{planStaleInfo.reason}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => generatePlan()}
+            className="px-3.5 py-1.5 text-xs font-bold text-white bg-amber-700 hover:bg-amber-800 rounded-lg shrink-0 transition-colors shadow-xs"
+          >
+            Recalculate Schedule
+          </button>
+        </div>
+      )}
+
       {/* OVERLOAD ALERT BANNER (If work exceeds available time) */}
       {isOverloaded && (
         <div className="bg-amber-50/90 border border-amber-300/80 rounded-xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -136,7 +169,7 @@ export default function DashboardView({ onOpenNewTaskModal }) {
               </div>
               <p className="text-xs text-amber-800/90 mt-1 leading-relaxed">
                 You have {formatMinutesHuman(totalRemainingMinutes)} of incomplete work queued, but your configured study budget for today is only {formatMinutesHuman(availableStudyMinutes)}.
-                CommitZero scheduled the most urgent items and flagged deferred tasks.
+                Reflow scheduled the most urgent items and flagged deferred tasks.
               </p>
             </div>
           </div>
@@ -528,7 +561,7 @@ export default function DashboardView({ onOpenNewTaskModal }) {
                 Plan Recovery Engine
               </h4>
               <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                Fell behind or underestimated task duration? CommitZero recalculates a realistic schedule without simply shaming you with red overdue labels.
+                Fell behind or underestimated task duration? Reflow recalculates a realistic schedule without simply shaming you with red overdue labels.
               </p>
 
               <button

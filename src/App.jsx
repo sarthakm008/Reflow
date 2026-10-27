@@ -12,9 +12,10 @@ import FocusWorkspaceView from './components/focus/FocusWorkspaceView.jsx';
 import PlanRecoveryView from './components/recovery/PlanRecoveryView.jsx';
 import AnalyticsView from './components/analytics/AnalyticsView.jsx';
 import TaskFormModal from './components/tasks/TaskFormModal.jsx';
+import AuthView from './components/auth/AuthView.jsx';
 
 function AppContent() {
-  const { currentView } = useApp();
+  const { currentView, user, authenticate, continueAsGuest, setCurrentView } = useApp();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isGlobalTaskModalOpen, setIsGlobalTaskModalOpen] = useState(false);
 
@@ -36,6 +37,10 @@ function AppContent() {
         return <DashboardView onOpenNewTaskModal={() => setIsGlobalTaskModalOpen(true)} />;
     }
   };
+
+  if (currentView === 'auth') {
+    return <AuthView onAuthenticate={authenticate} onContinueAsGuest={continueAsGuest} onBack={() => setCurrentView('dashboard')} />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900 font-sans">

@@ -1,4 +1,4 @@
-// CommitZero - Daily Planner View
+// Reflow - Daily Planner View
 // Pure JavaScript, transparent chronological schedule generator with availability configuration
 
 import React, { useState } from 'react';
@@ -18,6 +18,8 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
+  RefreshCw,
+  Scissors,
 } from 'lucide-react';
 import { formatMinutesHuman } from '../../models/sessionModel.js';
 import { TaskStatus } from '../../models/taskModel.js';
@@ -27,6 +29,7 @@ export default function PlannerView() {
     tasks,
     preferences,
     currentPlan,
+    planStaleInfo,
     generatePlan,
     applyPlan,
     startFocusSession,
@@ -39,8 +42,9 @@ export default function PlannerView() {
     planDate: preferences.planDate || new Date().toISOString().split('T')[0],
     startTime: preferences.startTime || '09:00',
     endTime: preferences.endTime || '17:00',
-    maxDailyMinutes: preferences.maxDailyMinutes || 180,
-    breakDurationMinutes: preferences.breakDurationMinutes || 10,
+    maxDailyMinutes: preferences.maxDailyMinutes ?? 180,
+    breakDurationMinutes: preferences.breakDurationMinutes ?? 10,
+    workIntervalMinutes: preferences.workIntervalMinutes ?? 50,
     unavailablePeriods: preferences.unavailablePeriods || [],
   });
 
@@ -83,6 +87,7 @@ export default function PlannerView() {
       ...configForm,
       maxDailyMinutes: Number(configForm.maxDailyMinutes),
       breakDurationMinutes: Number(configForm.breakDurationMinutes),
+      workIntervalMinutes: Number(configForm.workIntervalMinutes),
     };
     generatePlan(updatedPrefs);
     setShowConfig(false);
@@ -91,8 +96,10 @@ export default function PlannerView() {
   const stats = currentPlan?.stats;
   const isOverloaded = stats?.isOverloaded;
   const blocks = currentPlan?.blocks || [];
+  const partiallyScheduledTasks = currentPlan?.partiallyScheduledTasks || [];
   const unscheduledTasks = currentPlan?.unscheduledTasks || [];
   const deadlineRisks = currentPlan?.deadlineRisks || [];
+  const validationError = currentPlan?.validationError;
 
   return (
     <div className="space-y-6 pb-12">
@@ -126,6 +133,37 @@ export default function PlannerView() {
           </button>
         </div>
       </div>
+
+      {/* SCHEDULE STALENESS / INVALIDATION ALERT */}
+      {planStaleInfo?.isStale && (
+        <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-start gap-2.5">
+            <RefreshCw className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-bold text-amber-900">Schedule Invalidation Notice</p>
+              <p className="text-xs text-amber-800 mt-0.5">{planStaleInfo.reason}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => generatePlan()}
+            className="px-3.5 py-1.5 text-xs font-bold text-white bg-amber-700 hover:bg-amber-800 rounded-lg shrink-0 transition-colors shadow-xs"
+          >
+            Recalculate Schedule Now
+          </button>
+        </div>
+      )}
+
+      {/* CONFIGURATION / VALIDATION ERROR */}
+      {validationError && (
+        <div className="bg-red-50 border border-red-300 rounded-xl p-4 flex items-start gap-3 shadow-xs">
+          <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs font-bold text-red-900">Invalid Availability Window</p>
+            <p className="text-xs text-red-800 mt-0.5">{validationError}</p>
+          </div>
+        </div>
+      )}
 
       {/* AVAILABILITY CONFIGURATION PANEL (Collapsible) */}
       {showConfig && (
@@ -178,7 +216,7 @@ export default function PlannerView() {
                   name="maxDailyMinutes"
                   value={configForm.maxDailyMinutes}
                   onChange={handleConfigChange}
-                  min="30"
+                  min="0"
                   max="720"
                   step="15"
                   className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg"
@@ -189,8 +227,27 @@ export default function PlannerView() {
               </div>
             </div>
 
-            {/* Break Preferences */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+            {/* Break Preferences & Work Intervals */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-100">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Work Interval (Minutes)
+                </label>
+                <input
+                  type="number"
+                  name="workIntervalMinutes"
+                  value={configForm.workIntervalMinutes}
+                  onChange={handleConfigChange}
+                  min="15"
+                  max="180"
+                  step="5"
+                  className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg"
+                />
+                <span className="text-[10px] text-slate-400 mt-0.5 block">
+                  Max continuous focus block before a rest break
+                </span>
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Buffer Break Duration (Minutes)
@@ -209,7 +266,7 @@ export default function PlannerView() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Unavailable Periods (Classes, Meals, Office Hours)
+                  Unavailable Periods
                 </label>
                 <div className="space-y-1.5">
                   {configForm.unavailablePeriods.map((period) => (
@@ -233,7 +290,7 @@ export default function PlannerView() {
                   <div className="flex items-center gap-2 pt-1">
                     <input
                       type="text"
-                      placeholder="e.g. Lunch or Lecture"
+                      placeholder="e.g. Lunch"
                       value={newPeriod.title}
                       onChange={(e) => setNewPeriod({ ...newPeriod, title: e.target.value })}
                       className="text-xs px-2 py-1 border border-slate-300 rounded w-1/3"
@@ -306,7 +363,7 @@ export default function PlannerView() {
               </div>
               <p className="text-xs text-slate-700 mt-1 leading-relaxed">
                 {isOverloaded
-                  ? `Total remaining work across eligible tasks is ${formatMinutesHuman(stats.totalRemainingWorkMinutes)}, which exceeds today's ${formatMinutesHuman(stats.availableStudyBudgetMinutes)} limit. CommitZero scheduled a feasible subset (${stats.scheduledTasksCount} tasks) and left ${stats.unscheduledTasksCount} unscheduled.`
+                  ? `Total remaining work across eligible tasks is ${formatMinutesHuman(stats.totalRemainingWorkMinutes)}, which exceeds today's ${formatMinutesHuman(stats.availableStudyBudgetMinutes)} limit. Reflow scheduled a feasible subset (${stats.scheduledTasksCount} tasks: ${stats.scheduledTasksCount - stats.partiallyScheduledTasksCount} fully, ${stats.partiallyScheduledTasksCount} partially) and deferred ${stats.unscheduledTasksCount} tasks.`
                   : `All eligible work (${formatMinutesHuman(stats.totalAllocatedMinutes)}) has been allocated into non-overlapping chronological blocks.`}
               </p>
             </div>
@@ -377,7 +434,7 @@ export default function PlannerView() {
                   }
 
                   const task = tasks.find((t) => t.id === block.taskId);
-                  const isDone = task?.status === TaskStatus.COMPLETED;
+                  const isDone = task?.status === TaskStatus.COMPLETED || block.status === 'Completed';
 
                   return (
                     <div
@@ -403,6 +460,11 @@ export default function PlannerView() {
                             {block.isSplit && (
                               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold">
                                 Split Session ({block.durationMinutes}m allocated)
+                              </span>
+                            )}
+                            {block.chunkNumber && block.totalChunksExpected > 1 && (
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-100 text-sky-800 font-semibold">
+                                Interval {block.chunkNumber}/{block.totalChunksExpected}
                               </span>
                             )}
                           </div>
@@ -453,15 +515,51 @@ export default function PlannerView() {
                 })
               ) : (
                 <div className="text-center py-8 text-xs text-slate-500">
-                  No active blocks scheduled. Click "Recalculate Schedule" above.
+                  {validationError ? (
+                    <span className="text-red-600 font-medium">{validationError}</span>
+                  ) : (
+                    <>No active blocks scheduled. Click "Recalculate Schedule" above.</>
+                  )}
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* Right 1 Col: Unscheduled Work & Decision Rationale */}
+        {/* Right 1 Col: Partially Scheduled & Unscheduled Work */}
         <div className="space-y-4">
+          {/* Partially Scheduled Work */}
+          {partiallyScheduledTasks.length > 0 && (
+            <div className="bg-white rounded-xl border border-amber-200 p-5 shadow-xs space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-amber-100">
+                <div className="flex items-center gap-1.5 text-amber-800">
+                  <Scissors className="w-4 h-4" />
+                  <h3 className="text-sm font-bold">Partially Scheduled Tasks</h3>
+                </div>
+                <span className="text-xs font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded">
+                  {partiallyScheduledTasks.length} Task{partiallyScheduledTasks.length === 1 ? '' : 's'}
+                </span>
+              </div>
+
+              <div className="space-y-2.5">
+                {partiallyScheduledTasks.map((item, idx) => (
+                  <div key={idx} className="p-3 rounded-lg bg-amber-50/60 border border-amber-200 text-xs space-y-1">
+                    <div className="flex items-center justify-between">
+                      <strong className="font-bold text-slate-900">{item.task.title}</strong>
+                      <span className="font-mono text-[11px] text-amber-900 font-semibold">
+                        {item.scheduledMinutes}m scheduled / {item.unallocatedMinutes}m deferred
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-600">
+                      {item.reason}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Completely Unscheduled Tasks */}
           <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="text-sm font-bold text-slate-900">Unscheduled Tasks</h3>
@@ -501,7 +599,7 @@ export default function PlannerView() {
               )}
             </div>
 
-            {unscheduledTasks.length > 0 && (
+            {(unscheduledTasks.length > 0 || partiallyScheduledTasks.length > 0) && (
               <div className="mt-5 pt-4 border-t border-slate-100">
                 <button
                   type="button"

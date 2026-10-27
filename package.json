@@ -1,15 +1,20 @@
 {
-  "name": "react-example",
+  "name": "reflow",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
-    "lint": "node -e \"console.log('JavaScript syntax OK')\"",
-    "test": "node --test tests/commitzero.test.js"
+    "lint": "node --check src/models/*.js src/engine/*.js src/utils/*.js tests/*.js",
+    "test": "node --test tests/commitzero.test.js",
+    "server:install": "npm --prefix server install",
+    "server:dev": "npm --prefix server run dev",
+    "server:start": "npm --prefix server start",
+    "server:test": "npm --prefix server test",
+    "server:lint": "npm --prefix server run lint"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -24,14 +29,7 @@
     "motion": "^12.23.24"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@types/react": "^19.3.0",
-    "@types/react-dom": "^19.3.0",
     "autoprefixer": "^10.4.21",
-    "esbuild": "^0.28.0",
-    "tailwindcss": "^4.3.3",
-    "tsx": "^4.21.0",
-    "typescript": "^7.0.2",
-    "@types/express": "^4.17.21"
+    "tailwindcss": "^4.3.3"
   }
 }

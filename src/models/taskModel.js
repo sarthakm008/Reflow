@@ -72,7 +72,10 @@ export function createTask({
   completedAt = null,
 }) {
   const validDuration = Math.max(1, Math.round(Number(estimatedDurationMinutes) || 30));
-  const remaining = remainingDurationMinutes !== null
+  const isCompleted = Object.values(TaskStatus).includes(status) && status === TaskStatus.COMPLETED;
+  const initialRemaining = isCompleted
+    ? 0
+    : remainingDurationMinutes !== null && remainingDurationMinutes !== undefined
     ? Math.max(0, Math.round(Number(remainingDurationMinutes)))
     : validDuration;
 
@@ -81,15 +84,28 @@ export function createTask({
     title: (title || '').trim(),
     description: (description || '').trim(),
     estimatedDurationMinutes: validDuration,
-    remainingDurationMinutes: remaining,
+    remainingDurationMinutes: initialRemaining,
     actualWorkMinutes: Math.max(0, Math.round(Number(actualWorkMinutes) || 0)),
     deadline: deadline || null,
     priority: Object.values(TaskPriority).includes(priority) ? priority : TaskPriority.MEDIUM,
     status: Object.values(TaskStatus).includes(status) ? status : TaskStatus.PENDING,
     subject: subject || 'Computer Science',
     createdAt: createdAt || new Date().toISOString(),
-    completedAt: completedAt || null,
+    completedAt: completedAt || (isCompleted ? new Date().toISOString() : null),
   };
+}
+
+/**
+ * Returns the true remaining work minutes for a task.
+ * Completed tasks always have 0 remaining minutes.
+ */
+export function getTaskRemainingMinutes(task) {
+  if (!task) return 0;
+  if (task.status === TaskStatus.COMPLETED) return 0;
+  if (task.remainingDurationMinutes !== undefined && task.remainingDurationMinutes !== null) {
+    return Math.max(0, Math.round(Number(task.remainingDurationMinutes)));
+  }
+  return Math.max(0, Math.round(Number(task.estimatedDurationMinutes) || 0));
 }
 
 export function isTaskOverdue(task, referenceDate = new Date()) {

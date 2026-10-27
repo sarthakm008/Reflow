@@ -1,4 +1,4 @@
-// CommitZero - Plan Recovery View
+// Reflow - Plan Recovery View
 // Pure JavaScript, the flagship decision-support and schedule repair system
 
 import React, { useState, useEffect } from 'react';
@@ -57,14 +57,14 @@ export default function PlanRecoveryView() {
     });
   };
 
-  // Ensure recovery proposal is generated if user opened recovery view directly
+  // Ensure recovery proposal is generated if user opened recovery view directly without an active proposal
   useEffect(() => {
     if (!recoveryProposal) {
       triggerPlanRecovery({
         triggerReason: RecoveryTriggerReason.MANUAL_REQUEST,
       });
     }
-  }, [recoveryProposal, triggerPlanRecovery]);
+  }, []);
 
   const proposal = recoveryProposal;
 
@@ -81,7 +81,7 @@ export default function PlanRecoveryView() {
             Plan Recovery Console
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl leading-relaxed">
-            When tasks take longer, sessions get cut short, or unplanned delays occur, CommitZero recalibrates your workload with transparent reasoning instead of passive guilt.
+            When tasks take longer, sessions get cut short, or unplanned delays occur, Reflow recalibrates your workload with transparent reasoning instead of passive guilt.
           </p>
         </div>
 

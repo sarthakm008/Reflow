@@ -1,0 +1,24 @@
+{
+  "name": "reflow-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch index.js",
+    "start": "node index.js",
+    "test": "node --test tests/*.test.js",
+    "lint": "node --check index.js && node --check routes/authRoutes.js && node --check routes/taskRoutes.js && node --check routes/sessionRoutes.js && node --check routes/userRoutes.js && node --check controllers/authController.js && node --check controllers/taskController.js && node --check controllers/sessionController.js && node --check controllers/userController.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
+    "express-rate-limit": "^8.1.0",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.19.1",
+    "nodemon": "^3.1.14"
+  }
+}

@@ -1,5 +1,5 @@
 // CommitZero - Local Storage Persistence Layer
-// Pure JavaScript, robust JSON parsing and error recovery
+// Pure JavaScript, robust JSON parsing, error recovery, and migration support
 
 const STORAGE_KEY_PREFIX = 'commitzero_';
 const SCHEMA_VERSION = '1.0';
@@ -24,21 +24,59 @@ export const defaultPreferences = {
   ],
 };
 
+/**
+ * Safely reads a key from localStorage with migration and schema type validation
+ */
 export function loadFromStorage(key, fallback) {
   try {
-    const raw = localStorage.getItem(key);
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return fallback;
+    }
+
+    let raw = window.localStorage.getItem(key);
+
+    // If key not found, check legacy unversioned key before falling back
+    if (!raw && key.includes('_v')) {
+      const legacyKey = key.split('_v')[0];
+      raw = window.localStorage.getItem(legacyKey);
+    }
+
     if (!raw) return fallback;
+
     const parsed = JSON.parse(raw);
-    return parsed !== null && parsed !== undefined ? parsed : fallback;
+    if (parsed === null || parsed === undefined) return fallback;
+
+    // Validate type compatibility if fallback is array
+    if (Array.isArray(fallback) && !Array.isArray(parsed)) {
+      console.warn(`[CommitZero Storage] Expected array for "${key}", found:`, typeof parsed);
+      return fallback;
+    }
+
+    // Validate type compatibility if fallback is plain object
+    if (fallback !== null && typeof fallback === 'object' && !Array.isArray(fallback)) {
+      if (typeof parsed !== 'object' || Array.isArray(parsed)) {
+        console.warn(`[CommitZero Storage] Expected object for "${key}", found:`, typeof parsed);
+        return fallback;
+      }
+    }
+
+    return parsed;
   } catch (err) {
     console.warn(`[CommitZero Storage] Error reading key "${key}":`, err);
     return fallback;
   }
 }
 
+/**
+ * Safely saves data to localStorage
+ * @returns {boolean} true if write succeeded, false if quota exceeded or error occurred
+ */
 export function saveToStorage(key, data) {
   try {
-    localStorage.setItem(key, JSON.stringify(data));
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return false;
+    }
+    window.localStorage.setItem(key, JSON.stringify(data));
     return true;
   } catch (err) {
     console.error(`[CommitZero Storage] Error writing key "${key}":`, err);
@@ -48,8 +86,15 @@ export function saveToStorage(key, data) {
 
 export function clearAllStorage() {
   try {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return false;
+    }
     Object.values(STORAGE_KEYS).forEach((key) => {
-      localStorage.removeItem(key);
+      window.localStorage.removeItem(key);
+      // Also clean up any legacy unversioned keys
+      if (key.includes('_v')) {
+        window.localStorage.removeItem(key.split('_v')[0]);
+      }
     });
     return true;
   } catch (err) {
