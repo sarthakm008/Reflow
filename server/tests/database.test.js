@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createDatabaseConnector } from '../config/database.js';
+import { connectWithDiagnostics } from '../config/databaseDiagnostics.js';
 
 test('concurrent requests share a successful connection attempt', async () => {
   const connection = { readyState: 0 };
@@ -51,4 +52,25 @@ test('missing URI fails without attempting a connection', async () => {
 
   await assert.rejects(connectDatabase(''), /MONGODB_URI is not configured/);
   assert.equal(attempts, 0);
+});
+
+test('failed connection logs sanitized diagnostics before rethrowing', async () => {
+  const error = Object.assign(new Error(
+    'Could not connect to mongodb+srv://db-user:db-password@cluster.example/db; password=query-secret',
+  ), { name: 'MongoNetworkError', code: 'ENOTFOUND' });
+  const logs = [];
+  const connectDatabase = async () => { throw error; };
+
+  await assert.rejects(
+    connectWithDiagnostics(connectDatabase, 'mongodb://unused', 'readiness', (...entry) => logs.push(entry)),
+    (caught) => caught === error,
+  );
+
+  assert.equal(logs.length, 1);
+  assert.equal(logs[0][0], '[Reflow API] MongoDB connection failed');
+  assert.equal(logs[0][1].category, 'MongoNetworkError');
+  assert.equal(logs[0][1].code, 'ENOTFOUND');
+  assert.match(logs[0][1].message, /\[redacted MongoDB URI\]/);
+  assert.match(logs[0][1].message, /password=\[redacted\]/);
+  assert.doesNotMatch(JSON.stringify(logs), /db-password|query-secret/);
 });

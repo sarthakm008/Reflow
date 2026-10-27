@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { env, validateEnvironment } from './config/env.js';
 import { connectDatabase, getDatabaseStatus } from './config/database.js';
+import { connectWithDiagnostics } from './config/databaseDiagnostics.js';
 import authRoutes from './routes/authRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
 import sessionRoutes from './routes/sessionRoutes.js';
@@ -23,19 +24,6 @@ app.use(cors({
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 
-function logDatabaseFailure(context, error) {
-  const rawMessage = String(error?.message || 'Unknown database error');
-  const safeMessage = rawMessage
-    .replace(/mongodb(?:\+srv)?:\/\/[^\s"'<>]+/gi, '[redacted MongoDB URI]')
-    .replace(/(password|passwd|pwd)=([^&\s]+)/gi, '$1=[redacted]');
-  console.error('[Reflow API] MongoDB connection failed', {
-    context,
-    category: error?.name || 'Error',
-    code: error?.code || undefined,
-    message: safeMessage,
-  });
-}
-
 app.get('/api/ready', async (_req, res) => {
   const errors = validateEnvironment();
   if (errors.length) {
@@ -43,10 +31,9 @@ app.get('/api/ready', async (_req, res) => {
   }
 
   try {
-    await connectDatabase(env.mongoUri);
+    await connectWithDiagnostics(connectDatabase, env.mongoUri, 'readiness');
     return res.status(200).json({ status: 'ready', database: { connected: true } });
-  } catch (error) {
-    logDatabaseFailure('readiness', error);
+  } catch {
     return res.status(503).json({ status: 'not_ready', database: { connected: false } });
   }
 });
@@ -75,10 +62,9 @@ app.use('/api', async (req, res, next) => {
   }
 
   try {
-    await connectDatabase(env.mongoUri);
+    await connectWithDiagnostics(connectDatabase, env.mongoUri, 'request');
     return next();
-  } catch (error) {
-    logDatabaseFailure('request', error);
+  } catch {
     return res.status(500).json({
       error: { code: 'DATABASE_UNAVAILABLE', message: 'The service is temporarily unavailable.' },
     });
@@ -105,9 +91,9 @@ if (isMainFile) {
 
   const server = app.listen(env.port, () => {
     console.log(`Reflow API listening on http://localhost:${env.port}`);
-    connectDatabase(env.mongoUri)
+    connectWithDiagnostics(connectDatabase, env.mongoUri, 'startup')
       .then(() => console.log('MongoDB connected.'))
-      .catch((error) => logDatabaseFailure('startup', error));
+      .catch(() => {});
   });
 
   function shutdown(signal) {
