@@ -1,0 +1,6 @@
+{
+  "name": "CommitZero",
+  "description": "Plan realistically. Recover intelligently. Keep progressing. Academic productivity and intelligent plan recovery for college students.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

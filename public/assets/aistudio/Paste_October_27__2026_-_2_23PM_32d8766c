@@ -1,0 +1,993 @@
+# BUILD COMMITZERO — A COMPLETE STUDENT PRODUCTIVITY APPLICATION
+
+You are a senior full-stack engineer, product designer, UX specialist, and QA engineer.
+
+Your task is to build a complete, polished, functional web application called **CommitZero**.
+
+Do not merely describe the application, generate a landing page, or create a static UI prototype. Implement the actual application, its business logic, its scheduling algorithm, its recovery system, its data persistence, and all essential user workflows.
+
+Work directly in the available development environment. Run the application if possible, test its functionality, identify problems, and fix them.
+
+Prioritize a reliable, working product over a large number of superficial features.
+
+---
+
+# 1. PRODUCT IDENTITY
+
+**Product name:** CommitZero
+
+**Tagline:** Plan realistically. Recover intelligently. Keep progressing.
+
+**Target audience:** College students managing assignments, programming practice, exam preparation, revision, and personal projects.
+
+**The problem:**
+
+Students frequently underestimate how long their work will take, create unrealistic schedules, procrastinate on important tasks, and struggle to reorganize their workload when they fall behind.
+
+Traditional to-do lists help students record tasks but generally leave them responsible for creating and repairing their own schedules.
+
+**The solution:**
+
+CommitZero is a student-focused productivity application that helps students:
+- Organize academic tasks and deadlines.
+- Generate realistic daily schedules.
+- Track actual working time.
+- Identify overloaded schedules.
+- Recover intelligently when plans change.
+- Understand their productivity patterns using actual recorded data.
+
+**The core differentiator is Plan Recovery.**
+
+When a student falls behind, CommitZero should calculate a sensible revised plan instead of simply showing overdue tasks.
+
+The application must behave like a real software product, not a collection of disconnected screens.
+
+---
+
+# 2. STRICT TECHNOLOGY REQUIREMENTS
+
+## JAVASCRIPT ONLY — NO TYPESCRIPT WHATSOEVER
+
+This requirement is absolute and must be followed throughout the entire project.
+
+Use:
+- React.
+- Vite.
+- JavaScript.
+- JSX.
+- HTML.
+- CSS.
+- Browser localStorage for initial persistence.
+
+### Mandatory rules
+
+1. Use `.js` and `.jsx` for application source files.
+2. Never create `.ts` or `.tsx` files.
+3. Never use TypeScript syntax, type annotations, interfaces, enums, generics, or type declarations.
+4. Do not install TypeScript, `typescript`, `ts-node`, or TypeScript-specific tooling.
+5. Never initialize a TypeScript-based project template.
+6. Initialize React with the JavaScript Vite template.
+7. Use ordinary JavaScript objects, arrays, functions, and modules.
+8. Use JavaScript configuration files where supported.
+9. Do not generate `tsconfig.json` or TypeScript-specific configuration.
+10. Do not introduce TypeScript later when implementing new features.
+11. If a tool or template defaults to TypeScript, explicitly choose its JavaScript alternative.
+12. Before finishing, inspect the project for `.ts` and `.tsx` files and replace unnecessary TypeScript files with JavaScript equivalents.
+
+**The entire application source code must be written in JavaScript and JSX.**
+
+Do not weaken this requirement for convenience or tooling defaults.
+
+### Other technical constraints
+
+- Keep dependencies to a minimum.
+- Do not require paid APIs.
+- Do not require external AI services.
+- Do not hardcode API keys or secrets.
+- Do not require a backend for the initial MVP.
+- Make the application usable locally without accounts or authentication.
+
+Use a clear, maintainable React architecture.
+
+---
+
+# 3. DESIGN DIRECTION
+
+Create a polished, modern, distinctive productivity application.
+
+The interface should feel like a thoughtfully designed product built by a professional product team.
+
+Avoid generic AI-generated dashboard aesthetics.
+
+### Visual principles
+
+- Strong typography.
+- Clear visual hierarchy.
+- Consistent spacing.
+- A restrained color palette.
+- A cohesive design system.
+- Readable task cards and tables.
+- A clear schedule timeline.
+- Thoughtful empty states.
+- Subtle, purposeful animations.
+- Consistent icons.
+- Responsive layouts.
+- Accessible form controls.
+- Clear hover, focus, active, and disabled states.
+
+A dark sidebar with a light workspace is one possible direction, but choose the design that best suits the product.
+
+Avoid:
+- Excessive gradients.
+- Excessive glassmorphism.
+- Unnecessary glowing effects.
+- Too many rounded cards.
+- Decorative elements without a purpose.
+- Fake charts and fabricated statistics.
+- Placeholder buttons.
+- Overly complicated animations.
+
+Use a consistent visual language across every page.
+
+The product should look complete even when the user has no tasks.
+
+### Responsive behavior
+
+The application must work on:
+- Desktop.
+- Laptop.
+- Tablet.
+- Mobile.
+
+Navigation, task lists, scheduling views, dialogs, and forms must adapt to smaller screens.
+
+---
+
+# 4. APPLICATION STRUCTURE
+
+Implement the following six main views.
+
+1. Dashboard.
+2. Task Manager.
+3. Daily Planner.
+4. Focus Workspace.
+5. Plan Recovery.
+6. Analytics.
+
+Provide consistent navigation between them.
+
+Use React components and a sensible project structure.
+
+Keep scheduling logic, recovery logic, data persistence, and presentation components separate.
+
+Every visible interactive element must perform a meaningful action.
+
+---
+
+# 5. FEATURE ONE: DASHBOARD
+
+Build a useful dashboard that helps students immediately understand what they should do next.
+
+Display:
+- Current date.
+- A suitable greeting.
+- Tasks due today.
+- Overdue tasks.
+- Upcoming deadlines.
+- Completed tasks.
+- Remaining tasks.
+- Today's scheduled work.
+- Available study time.
+- Progress toward the daily plan.
+- Current or upcoming focus session.
+- Workload warnings.
+- A prominent button to generate or update today's plan.
+- A prominent way to recover when the plan falls behind.
+
+Use actual application data.
+
+Do not permanently hardcode statistics.
+
+### Dashboard interactions
+
+Users should be able to:
+- Navigate to a task.
+- Start a focus session.
+- Open today's plan.
+- Generate a schedule.
+- Trigger Plan Recovery.
+- View upcoming deadlines.
+- Mark tasks completed when appropriate.
+
+When there are no tasks, display a useful empty state that encourages the user to add their first task.
+
+When the workload is unrealistic, clearly communicate the problem without making the interface unnecessarily alarming.
+
+---
+
+# 6. FEATURE TWO: TASK MANAGER
+
+Implement complete task management.
+
+Users must be able to:
+- Create tasks.
+- Edit tasks.
+- Delete tasks.
+- Mark tasks as completed.
+- Reopen tasks if necessary.
+- View task details.
+- Filter tasks.
+- Sort tasks.
+- Search tasks.
+
+### Task properties
+
+Each task should support:
+
+- Unique identifier.
+- Title.
+- Optional description.
+- Estimated duration.
+- Optional deadline.
+- Priority: Low, Medium, High.
+- Status: Pending, In Progress, Completed.
+- Creation date.
+- Completion date when applicable.
+- Actual accumulated work duration.
+- Remaining work duration.
+- Optional category or subject.
+
+Avoid adding unnecessary fields that complicate the interface.
+
+### Validation
+
+Validate:
+- Required titles.
+- Positive task durations.
+- Valid dates.
+- Valid priority values.
+- Reasonable duration limits.
+
+Display understandable validation errors.
+
+Prevent malformed tasks from entering the scheduling engine.
+
+### Task list
+
+Provide useful filters for:
+- All tasks.
+- Pending.
+- In Progress.
+- Completed.
+- Overdue.
+- Due soon.
+
+Allow sorting by:
+- Deadline.
+- Priority.
+- Estimated duration.
+- Creation date.
+
+Make the task creation and editing workflows quick and intuitive.
+
+Deleting a task must not accidentally corrupt existing session history.
+
+---
+
+# 7. FEATURE THREE: DAILY PLANNER
+
+This feature must contain a real scheduling algorithm.
+
+Do not simply sort tasks and display them as if they were intelligently scheduled.
+
+### User availability
+
+Allow users to configure:
+- The date being planned.
+- Available start time.
+- Available end time.
+- Available working duration.
+- Break preferences.
+- Optional unavailable periods.
+
+Make the defaults sensible so that a first-time user can try the planner immediately.
+
+### Scheduling considerations
+
+The algorithm should consider:
+- Task deadlines.
+- Task priority.
+- Remaining work duration.
+- Available time.
+- Existing completed work.
+- Existing schedule constraints.
+- Breaks.
+- Task dependencies if implemented.
+
+Use deterministic, transparent JavaScript logic.
+
+The same inputs should produce predictable results.
+
+### Required behavior
+
+The planner must:
+1. Generate a chronological daily schedule.
+2. Allocate tasks within available time.
+3. Avoid overlapping time blocks.
+4. Respect unavailable periods.
+5. Include breaks when configured.
+6. Avoid scheduling completed tasks.
+7. Use remaining work rather than blindly reusing original estimates.
+8. Identify unscheduled tasks.
+9. Identify tasks at risk of missing deadlines.
+10. Explain why tasks could not be scheduled.
+11. Allow the student to regenerate the plan.
+12. Allow the student to review changes before replacing an existing plan.
+
+Never allocate more work than the available time permits.
+
+Never claim that all tasks fit when they do not.
+
+### Scheduling priorities
+
+Create a reasonable prioritization system that combines:
+- Deadline urgency.
+- Explicit task priority.
+- Remaining work.
+- Available scheduling windows.
+
+Document the prioritization rules in the code and README.
+
+Do not claim the algorithm is mathematically optimal unless that has actually been established.
+
+### Scheduling conflicts
+
+If six hours of work remain but the student has only three hours available, the planner must:
+- Schedule a feasible subset.
+- Identify the unscheduled work.
+- Explain the overload.
+- Recommend reasonable alternatives.
+
+Do not silently discard tasks.
+
+### Schedule display
+
+Show:
+- Start time.
+- End time.
+- Task title.
+- Planned duration.
+- Task priority.
+- Relevant deadline information.
+- Breaks or unavailable periods.
+- Unscheduled tasks.
+
+Provide a clear visual distinction between completed, upcoming, active, delayed, and unscheduled work.
+
+---
+
+# 8. FEATURE FOUR: FOCUS WORKSPACE
+
+Build a functional focus session interface.
+
+The student should be able to start working on a task directly from the planner or task manager.
+
+### Required controls
+
+- Start.
+- Pause.
+- Resume.
+- Finish.
+- Cancel.
+
+### Focus session information
+
+Display:
+- Current task.
+- Planned duration.
+- Elapsed active time.
+- Remaining planned time.
+- Session status.
+- A progress indicator.
+
+Use a clean, distraction-free layout.
+
+### Time tracking
+
+Implement time tracking correctly.
+
+Use timestamps to calculate elapsed active time.
+
+Do not rely solely on a JavaScript counter incrementing once per second, because that can become inaccurate when a tab is inactive.
+
+Paused time must not count as active work time.
+
+Handle:
+- Browser refreshes.
+- Tab inactivity.
+- Paused sessions.
+- Resumed sessions.
+- Cancelled sessions.
+- Completed sessions.
+
+Avoid counting the same time twice.
+
+### Session recording
+
+When a session ends, record:
+- Associated task.
+- Start time.
+- End time.
+- Active duration.
+- Session outcome.
+- Any relevant planned duration.
+
+Update task progress appropriately.
+
+If a task requires two hours and the student works for 45 minutes, do not automatically mark it completed.
+
+Let the student indicate whether the task is finished or whether work remains.
+
+Support multiple focus sessions for the same task.
+
+Use the recorded sessions as the source of truth for analytics.
+
+---
+
+# 9. FEATURE FIVE: PLAN RECOVERY
+
+THIS IS THE MOST IMPORTANT FEATURE IN THE ENTIRE APPLICATION.
+
+Plan Recovery must be a functioning scheduling and decision-support system.
+
+It is the primary reason CommitZero exists.
+
+Do not implement it as a chatbot, a static modal, or a list of generic suggestions.
+
+### Scenarios to support
+
+1. A task takes longer than expected.
+2. A focus session ends while the task remains unfinished.
+3. A student skips a scheduled task.
+4. A new urgent assignment is added.
+5. A student has less time available than expected.
+6. A task is postponed.
+7. A deadline becomes unrealistic given the remaining workload.
+
+### Recovery workflow
+
+When the student triggers recovery:
+
+STEP 1: Inspect the current plan.
+
+Determine:
+- Which tasks are completed.
+- Which tasks are unfinished.
+- Which tasks are currently active.
+- How much time remains today.
+- Which tasks have approaching deadlines.
+- Which schedule blocks are still valid.
+
+STEP 2: Calculate the actual remaining workload.
+
+Use:
+- Recorded focus sessions.
+- Remaining task duration.
+- Available time.
+- Current task status.
+- Deadline information.
+
+Do not count completed work again.
+
+STEP 3: Generate a revised schedule.
+
+Reevaluate priorities and allocate the remaining work.
+
+Consider:
+- Deadline urgency.
+- Priority.
+- Remaining duration.
+- Remaining available time.
+- Existing schedule constraints.
+
+STEP 4: Detect conflicts.
+
+Identify:
+- Tasks that cannot fit into today's remaining schedule.
+- Tasks at risk of missing their deadlines.
+- Tasks that should move to another day.
+- Tasks that might be split into smaller sessions.
+
+STEP 5: Explain the changes.
+
+For every important recommendation, explain why it was made.
+
+Examples:
+- "Moved lecture revision to tomorrow because the MongoDB assignment is due sooner."
+- "Split algorithm practice into two sessions because the remaining time is limited."
+- "This deadline is at risk because the remaining work exceeds the available time."
+
+These explanations must be generated from actual scheduling decisions, not randomly selected text.
+
+STEP 6: Show a preview.
+
+Display:
+- Original remaining schedule.
+- Proposed revised schedule.
+- Tasks being moved.
+- Tasks being split.
+- Tasks that remain unscheduled.
+- Deadline warnings.
+- Reasons for significant changes.
+
+STEP 7: Ask the student to decide.
+
+Provide actions to:
+- Accept revised plan.
+- Reject changes.
+- Adjust the proposal where practical.
+
+Do not silently replace the existing schedule.
+
+STEP 8: Apply the changes.
+
+If accepted:
+- Save the new schedule.
+- Preserve completed tasks and historical sessions.
+- Update relevant schedule states.
+- Keep unscheduled tasks visible.
+- Refresh the dashboard.
+
+### Recovery correctness
+
+The recovery algorithm must guarantee that:
+- Completed tasks remain completed.
+- Historical focus sessions are preserved.
+- Scheduled blocks do not overlap.
+- Allocations do not exceed remaining available time.
+- Unfinished tasks are not falsely marked completed.
+- Original deadlines are not silently changed.
+- Tasks that do not fit remain visible.
+- Recommendations are based on actual data.
+
+If the available time is insufficient, the correct result is to explain the conflict, not invent more time.
+
+If the system cannot construct a feasible plan, it must communicate that honestly.
+
+---
+
+# 10. FEATURE SIX: ANALYTICS
+
+Build a meaningful analytics page using actual task and session history.
+
+### Suggested metrics
+
+- Total tasks.
+- Completed tasks.
+- Pending tasks.
+- Completion rate.
+- Actual focus time.
+- Planned versus actual time.
+- Estimated versus actual duration.
+- Daily focus time.
+- Tasks postponed.
+- Tasks completed before their deadlines.
+- Historical scheduling accuracy.
+
+Use simple charts or visual summaries where useful.
+
+Do not overcomplicate the analytics.
+
+### Data correctness
+
+- Calculate metrics from persisted records.
+- Handle empty datasets.
+- Avoid division-by-zero errors.
+- Avoid counting duplicated sessions.
+- Distinguish estimated duration from recorded active duration.
+- Clearly distinguish current-day metrics from historical metrics.
+
+Never fabricate performance data and present it as actual user activity.
+
+If sample data is included, clearly identify it as sample data.
+
+---
+
+# 11. DATA MODEL AND PERSISTENCE
+
+Use browser localStorage for the initial version.
+
+The application must work without a backend.
+
+Persist:
+- Tasks.
+- Focus sessions.
+- Schedule preferences.
+- Daily plans.
+- Relevant completion history.
+- User preferences.
+
+### Data integrity
+
+Implement:
+- Unique identifiers.
+- Consistent task status transitions.
+- Sensible date handling.
+- Validation before saving.
+- Graceful handling of missing data.
+- Graceful handling of malformed stored data.
+- A versioned storage structure if useful.
+
+Do not erase all user data when a minor application update occurs.
+
+Avoid duplicating data unnecessarily.
+
+Use a consistent source of truth for task durations and focus session history.
+
+When deriving metrics, use the appropriate recorded data rather than relying on stale cached values.
+
+Refreshing the browser must not erase user progress.
+
+Provide a clear option to reset sample data or clear application data, with confirmation before destructive actions.
+
+Do not require authentication.
+
+Do not add a database or backend unless it becomes necessary for the core product.
+
+---
+
+# 12. ERROR HANDLING AND EDGE CASES
+
+The application must handle realistic situations.
+
+Examples:
+- No tasks exist.
+- A task has no deadline.
+- A deadline has passed.
+- A task has an invalid duration.
+- No time is available today.
+- The available time is shorter than the smallest task.
+- A task is completed before its scheduled block.
+- A task remains unfinished after a session.
+- A user refreshes during a focus session.
+- A focus session is paused.
+- The user changes availability after generating a plan.
+- A task is edited after it has been scheduled.
+- A task is deleted while appearing in a plan.
+- Stored data is missing or corrupted.
+- Several tasks have the same priority and deadline.
+
+Use sensible defaults and explain problems clearly.
+
+Do not crash the application because one task has invalid data.
+
+---
+
+# 13. CODE ORGANIZATION
+
+Keep the project maintainable.
+
+Use reusable React components.
+
+Separate:
+- UI components.
+- Pages or views.
+- Scheduling logic.
+- Recovery logic.
+- Data persistence.
+- Time calculations.
+- Analytics calculations.
+- Validation.
+- Shared utilities.
+
+Possible project structure:
+
+src/
+  components/
+  pages/
+  features/
+    tasks/
+    planner/
+    focus/
+    recovery/
+    analytics/
+  utils/
+  styles/
+  App.jsx
+  main.jsx
+
+Adapt the structure if necessary, but keep responsibilities clear.
+
+Use `.js` for ordinary JavaScript modules and `.jsx` for React components.
+
+Do not introduce TypeScript.
+
+Avoid:
+- Huge components containing all business logic.
+- Duplicated scheduling algorithms.
+- Unnecessary global state libraries.
+- Excessive dependencies.
+- Hardcoded secrets.
+- Unexplained magic numbers.
+- Fake functionality.
+- Unnecessary abstraction.
+
+---
+
+# 14. TESTING REQUIREMENTS
+
+If the environment supports automated testing, implement and run tests.
+
+Use a suitable JavaScript testing setup.
+
+Do not install TypeScript-specific tooling.
+
+### Scheduling tests
+
+Test:
+1. All tasks fit within the available time.
+2. Total work exceeds available time.
+3. Different priorities affect scheduling appropriately.
+4. Approaching deadlines affect prioritization.
+5. No scheduled blocks overlap.
+6. Completed tasks are excluded.
+7. Tasks without deadlines are handled.
+8. Zero or negative durations are rejected.
+9. Unavailable periods are respected if implemented.
+10. Unscheduled tasks are reported correctly.
+
+### Focus session tests
+
+Test:
+1. Starting a session.
+2. Pausing a session.
+3. Resuming a session.
+4. Finishing a session.
+5. Cancelling a session.
+6. Excluding paused time.
+7. Preserving session history.
+8. Updating task progress correctly.
+
+### Plan Recovery tests
+
+Test:
+1. A task takes longer than expected.
+2. A task remains unfinished.
+3. A student skips a session.
+4. An urgent task is introduced.
+5. Available time decreases.
+6. A task cannot fit before its deadline.
+7. Completed tasks remain completed.
+8. Historical sessions are preserved.
+9. Revised blocks do not overlap.
+10. Proposed changes are not applied before acceptance.
+11. The revised plan respects available time.
+12. Infeasible work is clearly identified.
+
+### Persistence tests
+
+Test:
+1. Tasks survive refreshes.
+2. Sessions survive refreshes.
+3. Schedule preferences survive refreshes.
+4. Invalid stored data is handled gracefully.
+
+Actually run the tests where possible.
+
+Never claim a test passed without running it and observing the result.
+
+---
+
+# 15. IMPLEMENTATION WORKFLOW
+
+Work in stages, but continue implementing instead of stopping after the planning phase.
+
+## Stage 1: Project setup
+
+- Inspect the environment.
+- Initialize React and Vite using JavaScript.
+- Establish the application shell.
+- Implement navigation.
+- Create the initial visual system.
+
+## Stage 2: Tasks and persistence
+
+- Implement task creation.
+- Implement editing and deletion.
+- Implement status management.
+- Implement localStorage.
+- Verify persistence.
+
+## Stage 3: Scheduling engine
+
+- Implement the scheduling algorithm.
+- Separate it from React components.
+- Add workload feasibility checks.
+- Add conflict detection.
+- Test edge cases.
+
+## Stage 4: Focus sessions
+
+- Implement the timer.
+- Implement session lifecycle management.
+- Record actual active work time.
+- Persist sessions.
+
+## Stage 5: Plan Recovery
+
+- Implement the recovery algorithm.
+- Implement the proposed schedule preview.
+- Explain scheduling changes.
+- Add acceptance and rejection.
+- Verify data integrity.
+
+## Stage 6: Analytics
+
+- Calculate metrics from actual data.
+- Implement visual summaries.
+- Handle empty and unusual datasets.
+
+## Stage 7: Polish
+
+- Improve the interface.
+- Check responsive behavior.
+- Fix navigation and interaction problems.
+- Add useful empty and error states.
+- Remove placeholder functionality.
+
+## Stage 8: Verification
+
+- Run the application.
+- Run available automated tests.
+- Fix errors.
+- Verify the primary end-to-end workflow.
+- Inspect the console for errors.
+- Check the production build if supported.
+
+## Stage 9: Documentation and deployment
+
+- Write the README.
+- Explain local setup.
+- Explain the architecture.
+- Document the scheduling algorithm.
+- Document Plan Recovery.
+- Explain testing.
+- Document deployment.
+- Identify limitations honestly.
+
+Do not spend excessive time writing documentation before the application works.
+
+Do not stop after generating the first screen.
+
+---
+
+# 16. PRIMARY END-TO-END DEMONSTRATION
+
+The following scenario must work in the finished application.
+
+A student has four tasks:
+
+1. Revise Express.js: 120 minutes, due tomorrow, high priority.
+2. Complete a MongoDB assignment: 180 minutes, due tomorrow, high priority.
+3. Practice algorithms: 120 minutes, due in three days, medium priority.
+4. Revise lecture notes: 60 minutes, due in two days, medium priority.
+
+The student has only 180 minutes available today.
+
+The student generates a plan.
+
+CommitZero must identify that all four tasks cannot fit into today's available time.
+
+The student begins revising Express.js.
+
+After working for 90 minutes, the student records that the task requires another 60 minutes.
+
+CommitZero recalculates the remaining workload.
+
+It then:
+- Preserves the 90 minutes of completed work.
+- Calculates the remaining time available.
+- Reassesses deadlines and priorities.
+- Proposes a revised schedule.
+- Identifies tasks that need to move.
+- Flags deadline risks when appropriate.
+- Explains why the plan changed.
+- Allows the student to accept or reject the revised schedule.
+
+After the student accepts the proposal, the dashboard must reflect the new plan.
+
+The analytics page must use the recorded session data.
+
+Do not hardcode the expected result for this specific example. The scheduling and recovery algorithms must work with arbitrary valid task data.
+
+---
+
+# 17. DOCUMENTATION AND DEPLOYMENT
+
+Prepare a complete README.md containing:
+
+- Project name.
+- Product description.
+- Problem statement.
+- Target audience.
+- Main features.
+- Technology stack.
+- Project structure.
+- Local installation instructions.
+- Development commands.
+- Testing instructions.
+- Scheduling algorithm explanation.
+- Plan Recovery explanation.
+- Data persistence details.
+- Deployment instructions.
+- Known limitations.
+
+Prepare the application for deployment to a suitable platform such as Vercel.
+
+Do not invent deployment URLs.
+
+Do not claim deployment succeeded without verifying the actual deployed application.
+
+If the environment cannot deploy directly, provide exact deployment steps.
+
+Keep credentials and secrets out of the source code and repository.
+
+If source export is available, ensure the entire application source can be downloaded and run locally.
+
+---
+
+# 18. FINAL QUALITY CHECKLIST
+
+Before considering the application complete, verify:
+
+[ ] The project uses JavaScript and JSX only.
+[ ] No `.ts` or `.tsx` application source files remain.
+[ ] The application starts successfully.
+[ ] Navigation works.
+[ ] Tasks can be created, edited, deleted, and completed.
+[ ] Data persists across browser refreshes.
+[ ] Scheduling respects available time.
+[ ] Scheduling does not create overlapping blocks.
+[ ] Unscheduled tasks are identified.
+[ ] Focus sessions record actual active time.
+[ ] Paused time is excluded.
+[ ] Plan Recovery produces meaningful revised schedules.
+[ ] Recovery changes require user approval.
+[ ] Completed work and session history are preserved.
+[ ] Analytics use actual recorded data.
+[ ] Empty states work correctly.
+[ ] Forms validate input.
+[ ] Responsive layouts work.
+[ ] No visible buttons are fake.
+[ ] Automated tests have been run where supported.
+[ ] Production build succeeds where supported.
+[ ] README reflects the actual implementation.
+[ ] Remaining limitations are documented.
+
+---
+
+# 19. IMPORTANT EXECUTION INSTRUCTIONS
+
+Do not respond with only an implementation plan.
+
+Do not provide only code snippets.
+
+Do not create only a landing page.
+
+Do not replace functional business logic with mock data.
+
+Do not simulate successful tests.
+
+Do not pretend deployment has occurred.
+
+Do not add unnecessary features before the core workflow works.
+
+Do not introduce TypeScript under any circumstances.
+
+Use your available tools to implement, run, inspect, and improve the application.
+
+If the environment imposes limitations, work around them where possible and explain any genuine blockers.
+
+**Start building CommitZero now.**
+
+Your first priority is to establish a runnable JavaScript React application and implement the complete core workflow. Continue through the stages until the available environment's capabilities or a genuine blocker prevents further progress.
