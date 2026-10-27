@@ -23,6 +23,34 @@ app.use(cors({
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 
+function logDatabaseFailure(context, error) {
+  const rawMessage = String(error?.message || 'Unknown database error');
+  const safeMessage = rawMessage
+    .replace(/mongodb(?:\+srv)?:\/\/[^\s"'<>]+/gi, '[redacted MongoDB URI]')
+    .replace(/(password|passwd|pwd)=([^&\s]+)/gi, '$1=[redacted]');
+  console.error('[Reflow API] MongoDB connection failed', {
+    context,
+    category: error?.name || 'Error',
+    code: error?.code || undefined,
+    message: safeMessage,
+  });
+}
+
+app.get('/api/ready', async (_req, res) => {
+  const errors = validateEnvironment();
+  if (errors.length) {
+    return res.status(503).json({ status: 'not_ready', database: { connected: false } });
+  }
+
+  try {
+    await connectDatabase(env.mongoUri);
+    return res.status(200).json({ status: 'ready', database: { connected: true } });
+  } catch (error) {
+    logDatabaseFailure('readiness', error);
+    return res.status(503).json({ status: 'not_ready', database: { connected: false } });
+  }
+});
+
 app.get('/api/health', (_req, res) => {
   const database = getDatabaseStatus();
   const connected = Boolean(database?.connected);
@@ -49,7 +77,8 @@ app.use('/api', async (req, res, next) => {
   try {
     await connectDatabase(env.mongoUri);
     return next();
-  } catch {
+  } catch (error) {
+    logDatabaseFailure('request', error);
     return res.status(500).json({
       error: { code: 'DATABASE_UNAVAILABLE', message: 'The service is temporarily unavailable.' },
     });
@@ -78,7 +107,7 @@ if (isMainFile) {
     console.log(`Reflow API listening on http://localhost:${env.port}`);
     connectDatabase(env.mongoUri)
       .then(() => console.log('MongoDB connected.'))
-      .catch((error) => console.error(`MongoDB connection failed: ${error.message}. Health endpoint will report degraded status.`));
+      .catch((error) => logDatabaseFailure('startup', error));
   });
 
   function shutdown(signal) {
