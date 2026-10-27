@@ -10,7 +10,7 @@ export function calculateAnalyticsMetrics(tasks = [], sessions = []) {
   const pendingTasks = tasks.filter((t) => t.status === TaskStatus.PENDING);
 
   const completedCount = completedTasks.length;
-  const completionRate = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
+  const completionRate = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : null;
 
   // Session stats
   const totalSessions = sessions.length;
@@ -35,7 +35,7 @@ export function calculateAnalyticsMetrics(tasks = [], sessions = []) {
 
   const underestimationRatio = totalEstimatedForWorked > 0
     ? Number((totalActualForWorked / totalEstimatedForWorked).toFixed(2))
-    : 1.0;
+    : null;
 
   // Tasks completed before deadline vs after/no deadline
   let completedBeforeDeadlineCount = 0;

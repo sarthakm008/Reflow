@@ -29,12 +29,12 @@ export default function DashboardView({ onOpenNewTaskModal }) {
     storageWarning,
     preferences,
     activeTimer,
+    user,
     setCurrentView,
     startFocusSession,
     toggleTaskComplete,
     triggerPlanRecovery,
     generatePlan,
-    loadDemoScenario,
   } = useApp();
 
   const now = new Date();
@@ -62,7 +62,9 @@ export default function DashboardView({ onOpenNewTaskModal }) {
     0
   );
 
-  const availableStudyMinutes = Number(preferences.maxDailyMinutes) || 180;
+  const availableStudyMinutes = Number.isFinite(Number(preferences.maxDailyMinutes))
+    ? Number(preferences.maxDailyMinutes)
+    : 0;
   const isOverloaded = totalRemainingMinutes > availableStudyMinutes;
 
   // Plan stats
@@ -86,7 +88,7 @@ export default function DashboardView({ onOpenNewTaskModal }) {
             <span>Academic Command Center</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight mt-1">
-            {greeting}, Scholar
+            {greeting}, {user?.name?.trim().split(/\s+/)[0] || 'there'}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">{fullDateDisplay}</p>
         </div>
@@ -272,7 +274,7 @@ export default function DashboardView({ onOpenNewTaskModal }) {
             {completedTasks.length} <span className="text-xs font-normal text-slate-500">/ {totalTasks}</span>
           </div>
           <p className="text-[11px] text-slate-500 mt-1">
-            {totalTasks > 0 ? Math.round((completedTasks.length / totalTasks) * 100) : 0}% completion rate
+            {totalTasks > 0 ? `${Math.round((completedTasks.length / totalTasks) * 100)}% completion rate` : 'No tasks yet'}
           </p>
         </div>
       </div>
@@ -294,13 +296,6 @@ export default function DashboardView({ onOpenNewTaskModal }) {
               className="px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-xs"
             >
               Add First Task
-            </button>
-            <button
-              type="button"
-              onClick={() => loadDemoScenario()}
-              className="px-4 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg"
-            >
-              Load College Demo Tasks
             </button>
           </div>
         </div>

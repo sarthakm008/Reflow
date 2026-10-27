@@ -1,7 +1,7 @@
 // CommitZero - Application State Provider
 // Pure JavaScript React context with persistent localStorage synchronization and schedule consistency
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   STORAGE_KEYS,
   defaultPreferences,
@@ -26,45 +26,57 @@ import {
   analyzePlanRecovery,
   RecoveryTriggerReason,
 } from '../engine/recovery.js';
-import {
-  getCollegeStudentDemoTasks,
-  getDemoPreferences,
-  simulateSection16MiddayProgress,
-} from '../utils/sampleData.js';
 import { authApi, taskApi, sessionApi, userApi } from '../utils/api.js';
+import {
+  removeDemoTasks,
+  removeDemoSessions,
+  removeDemoPlan,
+  removeDemoPreferences,
+} from '../utils/guestData.js';
 
 const AppContext = createContext(null);
+
+function loadGuestTasks() {
+  return removeDemoTasks(loadFromStorage(STORAGE_KEYS.TASKS, []));
+}
+
+function loadGuestSessions() {
+  return removeDemoSessions(loadFromStorage(STORAGE_KEYS.SESSIONS, []));
+}
+
+function loadGuestPlan() {
+  return removeDemoPlan(loadFromStorage(STORAGE_KEYS.DAILY_PLAN, null));
+}
+
+function loadGuestPreferences() {
+  const preferences = loadFromStorage(STORAGE_KEYS.PREFERENCES, defaultPreferences);
+  return removeDemoPreferences(preferences);
+}
 
 export function AppProvider({ children }) {
   const [user, setUser] = useState(null);
   const [authReady, setAuthReady] = useState(false);
   const [cloudReady, setCloudReady] = useState(false);
+  const skipPreferenceSync = useRef(false);
   // Navigation
   const [currentView, setCurrentView] = useState('dashboard');
 
   // Tasks state
-  const [tasks, setTasks] = useState(() => {
-    const loaded = loadFromStorage(STORAGE_KEYS.TASKS, null);
-    if (loaded && Array.isArray(loaded)) return loaded;
-    // By default, initialize with the student demo tasks for immediate exploration
-    return getCollegeStudentDemoTasks();
-  });
+  const [tasks, setTasks] = useState(loadGuestTasks);
 
   // Focus sessions state
   const [sessions, setSessions] = useState(() => {
-    return loadFromStorage(STORAGE_KEYS.SESSIONS, []);
+    return loadGuestSessions();
   });
 
   // Scheduling Preferences
   const [preferences, setPreferences] = useState(() => {
-    const loaded = loadFromStorage(STORAGE_KEYS.PREFERENCES, null);
-    return loaded || getDemoPreferences();
+    return loadGuestPreferences();
   });
 
   // Current Daily Plan
   const [currentPlan, setCurrentPlan] = useState(() => {
-    const loaded = loadFromStorage(STORAGE_KEYS.DAILY_PLAN, null);
-    return loaded || null;
+    return loadGuestPlan();
   });
 
   // Schedule Staleness / Invalidation indicator
@@ -100,15 +112,15 @@ export function AppProvider({ children }) {
 
   const loadAccountData = useCallback(async (account, { importLocal = false } = {}) => {
     setCloudReady(false);
-    const localTasks = loadFromStorage(STORAGE_KEYS.TASKS, []);
-    const localSessions = loadFromStorage(STORAGE_KEYS.SESSIONS, []);
-    const localPreferences = loadFromStorage(STORAGE_KEYS.PREFERENCES, null) || getDemoPreferences();
-    const localPlan = loadFromStorage(STORAGE_KEYS.DAILY_PLAN, null);
+    const localTasks = loadGuestTasks();
+    const localSessions = loadGuestSessions();
+    const localPreferences = loadGuestPreferences();
+    const localPlan = loadGuestPlan();
     const [remoteTasksResult, remoteSessionsResult, remotePreferencesResult] = await Promise.all([
       taskApi.list(), sessionApi.list(), userApi.getPreferences(),
     ]);
-    let remoteTasks = remoteTasksResult.tasks || [];
-    let remoteSessions = remoteSessionsResult.sessions || [];
+    let remoteTasks = removeDemoTasks(remoteTasksResult.tasks || []);
+    let remoteSessions = removeDemoSessions(remoteSessionsResult.sessions || []);
     if (importLocal && remoteTasks.length === 0 && localTasks.length > 0) {
       const migrated = await Promise.all(localTasks.map((task) => taskApi.create(task)));
       remoteTasks = migrated.map((item) => item.task);
@@ -117,12 +129,15 @@ export function AppProvider({ children }) {
       const migrated = await Promise.all(localSessions.map((session) => sessionApi.create(session)));
       remoteSessions = migrated.map((item) => item.session);
     }
-    const remotePreferences = remotePreferencesResult.preferences || {};
-    const resolvedPreferences = Object.keys(remotePreferences).length ? remotePreferences : (importLocal ? localPreferences : getDemoPreferences());
+    const remotePreferences = removeDemoPreferences(remotePreferencesResult.preferences || {});
+    skipPreferenceSync.current = Boolean(
+      remotePreferencesResult.preferences?.unavailablePeriods?.some((period) => period.id === 'office-hours'),
+    );
+    const resolvedPreferences = Object.keys(remotePreferences).length ? remotePreferences : localPreferences;
     if (!Object.keys(remotePreferences).length) await userApi.updatePreferences(resolvedPreferences);
     const planDate = resolvedPreferences.planDate || new Date().toISOString().slice(0, 10);
     const planResult = await userApi.getPlan(planDate);
-    let resolvedPlan = planResult.plan || null;
+    let resolvedPlan = removeDemoPlan(planResult.plan || null);
     if (importLocal && !resolvedPlan && localPlan) {
       resolvedPlan = localPlan;
       await userApi.savePlan(planDate, localPlan);
@@ -151,15 +166,15 @@ export function AppProvider({ children }) {
     try { await authApi.logout(); } catch (error) { console.warn('Server sign-out could not be confirmed:', error.message); }
     setUser(null);
     setCloudReady(false);
-    setTasks([]);
-    setSessions([]);
-    setCurrentPlan(null);
-    setPreferences(getDemoPreferences());
-    setActiveTimer(null);
+    setPreferences(loadGuestPreferences());
+    setTasks(loadGuestTasks());
+    setSessions(loadGuestSessions());
+    setCurrentPlan(loadGuestPlan());
+    setActiveTimer(loadFromStorage(STORAGE_KEYS.ACTIVE_SESSION, null));
     setRecoveryProposal(null);
     setPlanStaleInfo(null);
     setCurrentView('dashboard');
-    showNotice('Signed out. Account data has been cleared from this view.', 'info');
+    showNotice('Signed out. Guest data on this device is available.', 'info');
   }, [showNotice]);
 
   const continueAsGuest = useCallback(() => {
@@ -170,39 +185,50 @@ export function AppProvider({ children }) {
 
   useEffect(() => {
     let active = true;
-    authApi.me().then(({ user: account }) => loadAccountData(account)).catch(() => {}).finally(() => {
+    authApi.me().then(({ user: account }) => loadAccountData(account)).catch((error) => {
+      if (error.status !== 401) showNotice(`Could not load your account. Continuing with guest data: ${error.message}`, 'warning', 6000);
+    }).finally(() => {
       if (active) setAuthReady(true);
     });
     return () => { active = false; };
-  }, [loadAccountData]);
+  }, [loadAccountData, showNotice]);
 
   // Sync to localStorage with write failure detection
   useEffect(() => {
+    if (user) return;
     const ok = saveToStorage(STORAGE_KEYS.TASKS, tasks);
     if (!ok) setStorageWarning('Unable to save tasks to local storage. Quota may be exceeded.');
-  }, [tasks]);
+  }, [tasks, user]);
 
   useEffect(() => {
+    if (user) return;
     const ok = saveToStorage(STORAGE_KEYS.SESSIONS, sessions);
     if (!ok) setStorageWarning('Unable to save session history to local storage.');
-  }, [sessions]);
+  }, [sessions, user]);
 
   useEffect(() => {
+    if (user) return;
     const ok = saveToStorage(STORAGE_KEYS.PREFERENCES, preferences);
     if (!ok) setStorageWarning('Unable to save preferences to local storage.');
-  }, [preferences]);
+  }, [preferences, user]);
 
   useEffect(() => {
+    if (user) return;
     const ok = saveToStorage(STORAGE_KEYS.DAILY_PLAN, currentPlan);
     if (!ok) setStorageWarning('Unable to save daily plan to local storage.');
-  }, [currentPlan]);
+  }, [currentPlan, user]);
 
   useEffect(() => {
+    if (user) return;
     saveToStorage(STORAGE_KEYS.ACTIVE_SESSION, activeTimer);
-  }, [activeTimer]);
+  }, [activeTimer, user]);
 
   useEffect(() => {
     if (!user || !cloudReady) return;
+    if (skipPreferenceSync.current) {
+      skipPreferenceSync.current = false;
+      return;
+    }
     userApi.updatePreferences(preferences).catch((error) => showNotice(`Could not sync preferences: ${error.message}`, 'warning'));
   }, [user, cloudReady, preferences, showNotice]);
 
@@ -232,12 +258,12 @@ export function AppProvider({ children }) {
 
   // Auto-generate initial plan if none exists
   useEffect(() => {
-    if (!currentPlan && tasks.length > 0) {
+    if (!user && !currentPlan && tasks.length > 0) {
       const plan = generateDailySchedule(tasks, preferences, preferences.planDate, new Date());
       setCurrentPlan(plan);
       setPlanStaleInfo(null);
     }
-  }, []); // run once on mount
+  }, [currentPlan, tasks, preferences, user]);
 
   // -------------------- TASK MANAGEMENT ACTIONS --------------------
   const addTask = useCallback((taskInput) => {
@@ -655,58 +681,6 @@ export function AppProvider({ children }) {
     showNotice('Recovery plan declined. Original schedule preserved.', 'info');
   }, [showNotice]);
 
-  // -------------------- DEMO SCENARIO HELPERS --------------------
-  const loadDemoScenario = useCallback(() => {
-    const demoTasks = getCollegeStudentDemoTasks();
-    const demoPrefs = getDemoPreferences();
-    setTasks(demoTasks);
-    setPreferences(demoPrefs);
-    setSessions([]);
-    setActiveTimer(null);
-    setRecoveryProposal(null);
-
-    // Generate overloaded initial plan
-    const initialPlan = generateDailySchedule(demoTasks, demoPrefs, demoPrefs.planDate, new Date());
-    setCurrentPlan(initialPlan);
-    setPlanStaleInfo(null);
-
-    setCurrentView('dashboard');
-    showNotice('Loaded College Student Demo Scenario: 4 tasks (480m total) vs 180m available study time.', 'success', 5000);
-  }, [showNotice]);
-
-  const runSection16Simulation = useCallback(() => {
-    try {
-      const result = simulateSection16MiddayProgress(tasks, sessions);
-      setTasks(result.updatedTasks);
-      setSessions(result.updatedSessions);
-      setActiveTimer(null);
-
-      // Trigger recovery with reason
-      const proposal = analyzePlanRecovery({
-        tasks: result.updatedTasks,
-        sessions: result.updatedSessions,
-        currentPlan,
-        preferences,
-        recoveryContext: {
-          triggerReason: RecoveryTriggerReason.TASK_RAN_OVER,
-          affectedTaskId: 'demo-task-express',
-          overrideAvailableMinutes: 90, // 180m initial - 90m worked = 90m left
-          useCurrentTimeAsStart: true,
-        },
-      });
-
-      setRecoveryProposal(proposal);
-      setCurrentView('recovery');
-      showNotice(
-        'Simulated: Worked 90m on Express.js (requires +60m). Plan Recovery generated revised schedule.',
-        'info',
-        6000
-      );
-    } catch (err) {
-      showNotice(err.message, 'warning');
-    }
-  }, [tasks, sessions, currentPlan, preferences, showNotice]);
-
   const resetAllData = useCallback(() => {
     clearAllStorage();
     setTasks([]);
@@ -755,8 +729,6 @@ export function AppProvider({ children }) {
       triggerPlanRecovery,
       acceptRecoveryPlan,
       rejectRecoveryPlan,
-      loadDemoScenario,
-      runSection16Simulation,
       resetAllData,
     }),
     [
@@ -787,8 +759,6 @@ export function AppProvider({ children }) {
       triggerPlanRecovery,
       acceptRecoveryPlan,
       rejectRecoveryPlan,
-      loadDemoScenario,
-      runSection16Simulation,
       resetAllData,
     ]
   );

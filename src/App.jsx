@@ -15,7 +15,7 @@ import TaskFormModal from './components/tasks/TaskFormModal.jsx';
 import AuthView from './components/auth/AuthView.jsx';
 
 function AppContent() {
-  const { currentView, user, authenticate, continueAsGuest, setCurrentView } = useApp();
+  const { currentView, user, authReady, authenticate, continueAsGuest, setCurrentView } = useApp();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isGlobalTaskModalOpen, setIsGlobalTaskModalOpen] = useState(false);
 
@@ -40,6 +40,10 @@ function AppContent() {
 
   if (currentView === 'auth') {
     return <AuthView onAuthenticate={authenticate} onContinueAsGuest={continueAsGuest} onBack={() => setCurrentView('dashboard')} />;
+  }
+
+  if (!authReady) {
+    return <div className="min-h-screen bg-slate-50 flex items-center justify-center text-sm text-slate-500">Loading your data…</div>;
   }
 
   return (

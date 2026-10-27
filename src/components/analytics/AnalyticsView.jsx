@@ -21,9 +21,10 @@ export default function AnalyticsView() {
   const { tasks, sessions, setCurrentView } = useApp();
 
   const metrics = calculateAnalyticsMetrics(tasks, sessions);
+  const hasRecordedData = tasks.length > 0 || sessions.length > 0;
 
   // Find max minutes in daily focus series for scaling bar heights
-  const maxDailyMins = Math.max(1, ...metrics.dailyFocusSeries.map((d) => d.minutes));
+  const maxDailyMins = Math.max(0, ...metrics.dailyFocusSeries.map((d) => d.minutes));
 
   return (
     <div className="space-y-6 pb-12 max-w-6xl mx-auto">
@@ -44,6 +45,12 @@ export default function AnalyticsView() {
           Start Focus Session
         </button>
       </div>
+
+      {!hasRecordedData && (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-5 text-center text-sm text-slate-500">
+          Complete some tasks and focus sessions to see your productivity insights.
+        </div>
+      )}
 
       {/* METRICS CARDS ROW */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -82,10 +89,10 @@ export default function AnalyticsView() {
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="text-2xl font-bold font-mono text-slate-900">
-            {metrics.completionRate}%
+            {metrics.completionRate === null ? 'N/A' : `${metrics.completionRate}%`}
           </div>
           <p className="text-[11px] text-slate-500 mt-1">
-            {metrics.completedCount} of {metrics.totalTasks} tasks finished
+            {metrics.totalTasks === 0 ? 'No tasks recorded yet' : `${metrics.completedCount} of ${metrics.totalTasks} tasks finished`}
           </p>
         </div>
 
@@ -96,11 +103,13 @@ export default function AnalyticsView() {
             <Target className="w-4 h-4 text-amber-600" />
           </div>
           <div className="text-2xl font-bold font-mono text-slate-900 flex items-baseline gap-1">
-            <span>{metrics.underestimationRatio}x</span>
+            <span>{metrics.underestimationRatio === null ? 'N/A' : `${metrics.underestimationRatio}x`}</span>
             <span className="text-xs font-normal text-slate-400 font-sans">actual/planned</span>
           </div>
           <p className="text-[11px] text-slate-500 mt-1">
-            {metrics.underestimationRatio > 1.1
+            {metrics.underestimationRatio === null
+              ? 'Record task work to compare estimates with actual time'
+              : metrics.underestimationRatio > 1.1
               ? 'Tending to underestimate task duration'
               : 'Estimations closely align with reality'}
           </p>
@@ -117,7 +126,7 @@ export default function AnalyticsView() {
               <p className="text-xs text-slate-500">Recorded active minutes per calendar day</p>
             </div>
             <span className="text-xs font-mono font-semibold text-emerald-600">
-              Peak: {formatMinutesHuman(maxDailyMins)}
+              Peak: {sessions.length === 0 ? 'N/A' : formatMinutesHuman(maxDailyMins)}
             </span>
           </div>
 

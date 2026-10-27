@@ -282,7 +282,11 @@ export default function FocusWorkspaceView() {
             </div>
           ) : (
             <div className="text-center py-6">
-              <p className="text-xs text-slate-500">All tasks are completed! Add a new task to start focusing.</p>
+              <p className="text-xs text-slate-500">
+                {tasks.length === 0
+                  ? 'No tasks yet. Create a task to start a focus session.'
+                  : 'All tasks are completed. Add a new task to start focusing.'}
+              </p>
               <button
                 type="button"
                 onClick={() => setCurrentView('tasks')}

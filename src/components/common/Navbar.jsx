@@ -5,15 +5,12 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext.jsx';
 import {
   Clock,
-  Play,
   RotateCcw,
   Sparkles,
-  HelpCircle,
   Menu,
   X,
   CheckCircle2,
   AlertTriangle,
-  Flame,
   LogIn,
   LogOut,
 } from 'lucide-react';
@@ -24,8 +21,6 @@ export default function Navbar({ onToggleMobileMenu, isMobileMenuOpen }) {
     activeTimer,
     liveElapsedSeconds,
     setCurrentView,
-    loadDemoScenario,
-    runSection16Simulation,
     resetAllData,
     notice,
     user,
@@ -33,7 +28,6 @@ export default function Navbar({ onToggleMobileMenu, isMobileMenuOpen }) {
   } = useApp();
 
   const [showConfirmReset, setShowConfirmReset] = useState(false);
-  const [showDemoMenu, setShowDemoMenu] = useState(false);
 
   const todayDateFormatted = new Date().toLocaleDateString(undefined, {
     weekday: 'short',
@@ -117,77 +111,17 @@ export default function Navbar({ onToggleMobileMenu, isMobileMenuOpen }) {
               <span className="hidden sm:inline">{user ? 'Sign out' : 'Sign in'}</span>
             </button>
 
-            {/* Quick Demo Scenario Trigger */}
-            <div className="relative">
+            {!user && (
               <button
                 type="button"
-                onClick={() => setShowDemoMenu(!showDemoMenu)}
+                onClick={() => setShowConfirmReset(true)}
                 className="flex items-center gap-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-md border border-slate-700 transition-colors"
-                title="Load college student test scenario or simulate midday progress"
+                title="Reset guest data stored on this device"
               >
-                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="hidden sm:inline">Demo Scenarios</span>
+                <RotateCcw className="w-3.5 h-3.5 text-slate-300" />
+                <span className="hidden sm:inline">Reset guest data</span>
               </button>
-
-              {showDemoMenu && (
-                <div
-                  className="absolute right-0 mt-2 w-72 bg-slate-800 border border-slate-700 rounded-lg shadow-xl py-2 z-50 text-xs text-slate-200"
-                  onMouseLeave={() => setShowDemoMenu(false)}
-                >
-                  <div className="px-3 py-1.5 font-semibold text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-700/60">
-                    Prompt Verification Suite
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      loadDemoScenario();
-                      setShowDemoMenu(false);
-                    }}
-                    className="w-full text-left px-3 py-2 hover:bg-slate-700/80 flex items-start gap-2"
-                  >
-                    <div className="w-2 h-2 rounded-full bg-emerald-400 mt-1 shrink-0" />
-                    <div>
-                      <div className="font-medium text-white">Load 4-Task Overloaded Scenario</div>
-                      <div className="text-[11px] text-slate-400">
-                        480m work vs 180m available study budget (Section 16).
-                      </div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      runSection16Simulation();
-                      setShowDemoMenu(false);
-                    }}
-                    className="w-full text-left px-3 py-2 hover:bg-slate-700/80 flex items-start gap-2 border-t border-slate-700/40"
-                  >
-                    <div className="w-2 h-2 rounded-full bg-amber-400 mt-1 shrink-0" />
-                    <div>
-                      <div className="font-medium text-white">Simulate 90m Work (+60m needed)</div>
-                      <div className="text-[11px] text-slate-400">
-                        Work 90m on Express.js, task takes 60m more, launches Plan Recovery!
-                      </div>
-                    </div>
-                  </button>
-
-                  <div className="border-t border-slate-700/60 my-1"></div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowConfirmReset(true);
-                      setShowDemoMenu(false);
-                    }}
-                    className="w-full text-left px-3 py-2 hover:bg-red-950/40 text-red-300 flex items-center gap-2"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5 text-red-400 shrink-0" />
-                    <span>Reset All Data to Empty</span>
-                  </button>
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </header>
@@ -209,7 +143,7 @@ export default function Navbar({ onToggleMobileMenu, isMobileMenuOpen }) {
             <div className="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-4">
               <AlertTriangle className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-semibold text-slate-900">Reset Application Data?</h3>
+            <h3 className="text-base font-semibold text-slate-900">Reset Guest Data?</h3>
             <p className="text-xs text-slate-600 mt-2">
               This will permanently remove all tasks, focus sessions, and active plans from localStorage.
             </p>

@@ -46,6 +46,12 @@ import {
   STORAGE_KEYS,
   defaultPreferences,
 } from '../src/utils/storage.js';
+import {
+  removeDemoTasks,
+  removeDemoSessions,
+  removeDemoPlan,
+  removeDemoPreferences,
+} from '../src/utils/guestData.js';
 
 describe('1. Task Model & Validation Tests', () => {
   test('rejects missing or empty title', () => {
@@ -105,6 +111,31 @@ describe('1. Task Model & Validation Tests', () => {
     });
     assert.equal(getTaskRemainingMinutes(activeTask), 45);
   });
+});
+
+test('analytics reports unavailable ratios when no records exist', () => {
+  const metrics = calculateAnalyticsMetrics([], []);
+  assert.equal(metrics.totalTasks, 0);
+  assert.equal(metrics.totalSessions, 0);
+  assert.equal(metrics.completionRate, null);
+  assert.equal(metrics.underestimationRatio, null);
+  assert.equal(metrics.totalFocusMinutes, 0);
+});
+
+test('legacy demo cleanup removes only known demo data and preserves guest records', () => {
+  const realTask = { id: 'guest-task', title: 'My task' };
+  const keptTasks = removeDemoTasks([realTask, { id: 'demo-task-express' }]);
+  const keptSessions = removeDemoSessions([
+    { id: 'guest-session', taskId: 'guest-task' },
+    { id: 'demo-session', taskId: 'demo-task-express' },
+  ]);
+  const cleanPlan = removeDemoPlan({ blocks: [{ taskId: 'demo-task-express' }] });
+  const preferences = removeDemoPreferences({ unavailablePeriods: [{ id: 'office-hours' }, { id: 'guest-break' }] });
+
+  assert.deepEqual(keptTasks, [realTask]);
+  assert.deepEqual(keptSessions, [{ id: 'guest-session', taskId: 'guest-task' }]);
+  assert.equal(cleanPlan, null);
+  assert.deepEqual(preferences.unavailablePeriods, [{ id: 'guest-break' }]);
 });
 
 describe('2. Scheduling Engine Tests', () => {

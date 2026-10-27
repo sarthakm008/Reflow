@@ -397,20 +397,34 @@ export default function TaskManagerView() {
       ) : (
         <div className="bg-white rounded-xl border border-slate-200 p-8 text-center max-w-md mx-auto my-6">
           <Layers className="w-10 h-10 text-slate-400 mx-auto mb-2" />
-          <h3 className="text-sm font-bold text-slate-800">No matching tasks</h3>
+          <h3 className="text-sm font-bold text-slate-800">
+            {tasks.length === 0 ? 'No tasks yet' : 'No matching tasks'}
+          </h3>
           <p className="text-xs text-slate-500 mt-1">
-            Try adjusting your search query or switching the status filter tab.
+            {tasks.length === 0
+              ? 'Create your first task to get started.'
+              : 'Try adjusting your search query or switching the status filter tab.'}
           </p>
-          <button
-            type="button"
-            onClick={() => {
-              setSearchQuery('');
-              setStatusFilter('ALL');
-            }}
-            className="mt-4 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-          >
-            Clear Filters
-          </button>
+          {tasks.length === 0 ? (
+            <button
+              type="button"
+              onClick={handleOpenCreate}
+              className="mt-4 px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors"
+            >
+              Create First Task
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                setStatusFilter('ALL');
+              }}
+              className="mt-4 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+            >
+              Clear Filters
+            </button>
+          )}
         </div>
       )}
 
