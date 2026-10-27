@@ -1,4 +1,4 @@
-# CommitZero
+# Reflow
 
 > **Plan realistically. Recover intelligently. Keep progressing.**
 
@@ -10,7 +10,7 @@ An academic productivity application and intelligent plan recovery system tailor
 
 College students frequently underestimate how long complex academic tasks take, construct overly ambitious and brittle schedules, procrastinate, and struggle to reorganize their workload when they inevitably fall behind.
 
-Traditional to-do apps simply mark tasks as red and overdue, creating guilt rather than offering a structured path forward. CommitZero's core differentiator is **Plan Recovery**: when reality deviates from the plan, CommitZero deterministically recalculates a realistic, feasible schedule with transparent reasoning.
+Traditional to-do apps simply mark tasks as red and overdue, creating guilt rather than offering a structured path forward. Reflow's core differentiator is **Plan Recovery**: when reality deviates from the plan, Reflow deterministically recalculates a realistic, feasible schedule with transparent reasoning.
 
 ---
 
@@ -183,7 +183,7 @@ To test the official scenario:
    - Daily available study budget: **180 minutes**.
 3. Observe the immediate **Workload Overload Alert**: 480m of work queued vs 180m budget (+300m deficit).
 4. Click **Simulate 90m Work (+60m needed)** or run a session in the Focus Workspace and log that the task requires another 60m.
-5. CommitZero automatically opens **Plan Recovery**, calculates the new remaining workload, shows that Express.js (+60m) and a portion of MongoDB take priority over algorithms and lecture notes, provides transparent reasons, and presents the side-by-side preview.
+5. Reflow automatically opens **Plan Recovery**, calculates the new remaining workload, shows that Express.js (+60m) and a portion of MongoDB take priority over algorithms and lecture notes, provides transparent reasons, and presents the side-by-side preview.
 6. Click **Accept Revised Plan** to apply the repaired schedule to your day.
 7. Check the **Analytics** page to observe the recorded 90m session and updated estimation accuracy index.
 
@@ -191,7 +191,7 @@ To test the official scenario:
 
 ## 8. Deployment
 
-To deploy CommitZero on Vercel:
+To deploy Reflow on Vercel:
 ```bash
 npm run build
 ```
